@@ -93,10 +93,10 @@ def labelme_shapes_to_label(img_shape, shapes):
 ################################################################################
 
 class LabelMeDataset(torch.utils.data.Dataset):
-    def __init__(self, root, resize, cropsize):
+    def __init__(self, root, transforms = None, transforms_target = None):
         self._root = root
-        self._resize = resize
-        self._cropsize = cropsize
+        self._transforms = transforms
+        self._transforms_target = transforms_target
 
         self._json = list(sorted(os.listdir(os.path.join(root))))
 
@@ -110,18 +110,25 @@ class LabelMeDataset(torch.utils.data.Dataset):
             mask = PIL.Image.fromarray(label)
             labels=[]
             for label_name in label_names:
-                labels.append(label_name)        
-
-        transform = transforms.Compose([transforms.Resize(self._resize),
-                                        transforms.CenterCrop(self._cropsize),
+                labels.append(label_name)
+                
+        transform = transforms.Compose([transforms.Resize((128,256)),
+                                        transforms.CenterCrop((128,256)),
                                         transforms.ToTensor(),
                                         ])
-        image = transform(image)
+        if self._transforms != None:
+            image = self._transforms(image)
+        else:
+            image = transform(image)
 
-        transforms_target = transforms.Compose([transforms.Resize(self._resize, PIL.Image.NEAREST),
-                                                transforms.CenterCrop(self._cropsize),
+        transform_target = transforms.Compose([transforms.Resize((128,256), PIL.Image.NEAREST),
+                                                transforms.CenterCrop((128,256)),
                                                 ])
-        mask = transforms_target(mask)
+        if self._transforms_target != None:
+            mask = self._transforms_target(mask)
+        else:
+            mask = transform_target(mask)
+            
         mask = np.array(mask)
         
         obj_ids = np.unique(mask)
