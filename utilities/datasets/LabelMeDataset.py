@@ -2,7 +2,16 @@ import base64
 import io
 import numpy as np
 import PIL.Image
+import PIL.ImageDraw
 import math
+
+import os
+import torch
+import torch.utils.data
+import PIL
+from torchvision import transforms
+import json
+
 
 def img_b64_to_arr(img_b64):
     f = io.BytesIO()
@@ -83,15 +92,6 @@ def labelme_shapes_to_label(img_shape, shapes):
     return lbl, label_name_to_value
 ################################################################################
 
-import os
-import torch
-import torch.utils.data
-import PIL
-from torchvision import transforms
-
-import json
-import PIL.Image
-
 class LabelMeDataset(torch.utils.data.Dataset):
     def __init__(self, root, resize, cropsize):
         self._root = root
@@ -104,19 +104,19 @@ class LabelMeDataset(torch.utils.data.Dataset):
         json_path = os.path.join(self._root, self._json[index])
         if os.path.isfile(json_path):
             data = json.load(open(json_path))
-            img = img_b64_to_arr(data['imageData'])
-            lbl, lbl_names = labelme_shapes_to_label(img.shape, data['shapes'])
-            img = PIL.Image.fromarray(img)
-            mask = PIL.Image.fromarray(lbl)
+            image = img_b64_to_arr(data['imageData'])
+            label, label_names = labelme_shapes_to_label(image.shape, data['shapes'])
+            image = PIL.Image.fromarray(image)
+            mask = PIL.Image.fromarray(label)
             labels=[]
-            for lbl_name in lbl_names:
-                labels.append(lbl_name)        
+            for label_name in label_names:
+                labels.append(label_name)        
 
         transform = transforms.Compose([transforms.Resize(self._resize),
                                         transforms.CenterCrop(self._cropsize),
                                         transforms.ToTensor(),
                                         ])
-        img = transform(img)
+        image = transform(image)
 
         transforms_target = transforms.Compose([transforms.Resize(self._resize, PIL.Image.NEAREST),
                                                 transforms.CenterCrop(self._cropsize),
@@ -161,7 +161,7 @@ class LabelMeDataset(torch.utils.data.Dataset):
         target["iscrowd"] = iscrowd
                     
 
-        return img, target
+        return image, target
 
     def __len__(self):
         return len(self._json)
