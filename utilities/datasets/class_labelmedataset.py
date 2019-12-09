@@ -14,7 +14,7 @@ from torchvision import transforms
 
 import json
 import PIL.Image
-from labelme import utils
+import labelme_utils
     
 class LabelmeDataset(torch.utils.data.Dataset):
     def __init__(self, root, resize, cropsize):
@@ -29,8 +29,8 @@ class LabelmeDataset(torch.utils.data.Dataset):
         json_path = os.path.join(self._root, self._json[idx])
         if os.path.isfile(json_path):
             data = json.load(open(json_path))
-            img = utils.img_b64_to_arr(data['imageData'])
-            lbl, lbl_names = utils.labelme_shapes_to_label(img.shape, data['shapes'])
+            img = labelme_utils.img_b64_to_arr(data['imageData'])
+            lbl, lbl_names = labelme_utils.labelme_shapes_to_label(img.shape, data['shapes'])
             img = PIL.Image.fromarray(img)
             mask = PIL.Image.fromarray(lbl)
             labels=[]
