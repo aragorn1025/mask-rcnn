@@ -13,13 +13,13 @@ import torchvision.transforms
 import json
 
 class LabelMeDataset(torch.utils.data.Dataset):
-    def img_b64_to_arr(img_b64):
+    def _img_b64_to_arr(img_b64):
         f = io.BytesIO()
         f.write(base64.b64decode(img_b64))
         img_arr = np.array(PIL.Image.open(f))
         return img_arr
     
-    def shape_to_mask(img_shape, points, shape_type=None,
+    def _shape_to_mask(img_shape, points, shape_type=None,
                       line_width=10, point_size=5):
         mask = np.zeros(img_shape[:2], dtype=np.uint8)
         mask = PIL.Image.fromarray(mask)
@@ -49,7 +49,7 @@ class LabelMeDataset(torch.utils.data.Dataset):
             mask = np.array(mask, dtype=bool)
             return mask
     
-    def shapes_to_label(img_shape, shapes, label_name_to_value, type='class'):
+    def _shapes_to_label(img_shape, shapes, label_name_to_value, type='class'):
         assert type in ['class', 'instance']
         
         cls = np.zeros(img_shape[:2], dtype=np.int32)
@@ -68,7 +68,7 @@ class LabelMeDataset(torch.utils.data.Dataset):
                     instance_names.append(label)
                 ins_id = instance_names.index(label)
             cls_id = label_name_to_value[cls_name]
-            mask = LabelMeDataset.shape_to_mask(img_shape[:2], points, shape_type)
+            mask = LabelMeDataset._shape_to_mask(img_shape[:2], points, shape_type)
             cls[mask] = cls_id
             if type == 'instance':
                 ins[mask] = ins_id
@@ -77,7 +77,7 @@ class LabelMeDataset(torch.utils.data.Dataset):
             return cls, ins
         return cls
     
-    def labelme_shapes_to_label(img_shape, shapes):
+    def _labelme_shapes_to_label(img_shape, shapes):
         
         label_name_to_value = {'_background_': 0}
         for shape in shapes:
@@ -88,7 +88,7 @@ class LabelMeDataset(torch.utils.data.Dataset):
                 label_value = len(label_name_to_value)
                 label_name_to_value[label_name] = label_value
                 
-        lbl = LabelMeDataset.shapes_to_label(img_shape, shapes, label_name_to_value)
+        lbl = LabelMeDataset._shapes_to_label(img_shape, shapes, label_name_to_value)
         return lbl, label_name_to_value
     
     def __init__(self, root, transforms = None, transforms_target = None):
@@ -102,8 +102,8 @@ class LabelMeDataset(torch.utils.data.Dataset):
         json_path = os.path.join(self._root, self._json[index])
         if os.path.isfile(json_path):
             data = json.load(open(json_path))
-            image = LabelMeDataset.img_b64_to_arr(data['imageData'])
-            label, label_names = LabelMeDataset.labelme_shapes_to_label(image.shape, data['shapes'])
+            image = LabelMeDataset._img_b64_to_arr(data['imageData'])
+            label, label_names = LabelMeDataset._labelme_shapes_to_label(image.shape, data['shapes'])
             image = PIL.Image.fromarray(image)
             mask = PIL.Image.fromarray(label)
             labels=[]
