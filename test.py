@@ -29,10 +29,10 @@ if __name__ == '__main__':
     engine = utilities.Engine(model = MaskRCNN())
     engine.load(args['weights'])
 
-	# load inputs
-	#inputs = 
-	raise NotImplementedError('The codes for loading inputs is not implement yet.')
+    # load inputs
+    #inputs = 
+    raise NotImplementedError('The codes for loading inputs is not implement yet.')
 
-	# save output
+    # save output
     #outputs = engine.get_outputs(inputs)
-	raise NotImplementedError('The codes for saveing outputs is not implement yet.')
+    raise NotImplementedError('The codes for saveing outputs is not implement yet.')
