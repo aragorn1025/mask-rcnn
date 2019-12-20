@@ -51,7 +51,6 @@ class LabelMeDataset(torch.utils.data.Dataset):
             mask = transform_target(mask)
             
         mask = np.array(mask)
-        
         obj_ids = np.unique(mask)
         obj_ids = obj_ids[1:]
 
@@ -71,7 +70,7 @@ class LabelMeDataset(torch.utils.data.Dataset):
         labels = labels[1:]
         labels = list(map(int, labels))
         labels = np.array(labels)
-        labels = torch.tensor(labels, dtype=torch.int64)
+        labels = torch.tensor(labels/1000, dtype=torch.int64)
 
         masks = torch.as_tensor(masks, dtype=torch.uint8)
 
@@ -137,12 +136,15 @@ class LabelMeDataset(torch.utils.data.Dataset):
         if type == 'instance':
             ins = np.zeros(img_shape[:2], dtype=np.int32)
             instance_names = ['_background_']
+        value = {'_background_': 0}
         for shape in shapes:
             points = shape['points']
             label = shape['label']
+            value_value = len(value)
             shape_type = shape.get('shape_type', None)
             if type == 'class':
-                cls_name = label
+                cls_name = str(int(label)*1000 + len(value))
+                value[cls_name] = value_value
             elif type == 'instance':
                 cls_name = label.split('-')[0]
                 if label not in instance_names:
@@ -151,6 +153,7 @@ class LabelMeDataset(torch.utils.data.Dataset):
             cls_id = label_name_to_value[cls_name]
             mask = LabelMeDataset._shape_to_mask(img_shape[:2], points, shape_type)
             cls[mask] = cls_id
+            
             if type == 'instance':
                 ins[mask] = ins_id
                 
@@ -162,12 +165,21 @@ class LabelMeDataset(torch.utils.data.Dataset):
         
         label_name_to_value = {'_background_': 0}
         for shape in shapes:
-            label_name = shape['label']
-            if label_name in label_name_to_value:
-                label_value = label_name_to_value[label_name]
-            else:
-                label_value = len(label_name_to_value)
-                label_name_to_value[label_name] = label_value
+            label_name = shape['label'] 
+            label_value = len(label_name_to_value)
+            label_name=str(int(label_name)*1000+len(label_name_to_value))
+            label_name_to_value[label_name] = label_value
                 
         lbl = LabelMeDataset._shapes_to_label(img_shape, shapes, label_name_to_value)
         return lbl, label_name_to_value
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
