@@ -1,3 +1,4 @@
+import glob
 import base64
 import io
 import numpy as np
@@ -14,17 +15,16 @@ import json
 
 class LabelMeDataset(torch.utils.data.Dataset):
     
-    def __init__(self, root, transforms = None, transforms_target = None):
-        self._root = root
-        self._transforms = transforms
+    def __init__(self, jsons_root, jsons_file_name = '*', transforms = None, transforms_target = None):
+        self._jsons = sorted(glob.glob(os.path.join(jsons_root, jsons_file_name)))
+        
+        self._transforms = transforms if transforms else torchvision.transforms.ToTensor()
         self._transforms_target = transforms_target
 
-        self._json = list(sorted(os.listdir(os.path.join(root))))
 
     def __getitem__(self, index):
-        json_path = os.path.join(self._root, self._json[index])
-        if os.path.isfile(json_path):
-            data = json.load(open(json_path))
+        if os.path.isfile(self._jsons[index]):
+            data = json.load(open(self._jsons[index]))
             image = LabelMeDataset._img_b64_to_arr(data['imageData'])
             label, label_names = LabelMeDataset._labelme_shapes_to_label(image.shape, data['shapes'])
             image = PIL.Image.fromarray(image)
@@ -33,22 +33,10 @@ class LabelMeDataset(torch.utils.data.Dataset):
             for label_name in label_names:
                 labels.append(label_name)
                 
-        transform = torchvision.transforms.Compose([torchvision.transforms.Resize((128,256)),
-                                        torchvision.transforms.CenterCrop((128,256)),
-                                        torchvision.transforms.ToTensor(),
-                                        ])
-        if self._transforms != None:
-            image = self._transforms(image)
-        else:
-            image = transform(image)
+        image = self._transforms(image)
 
-        transform_target = torchvision.transforms.Compose([torchvision.transforms.Resize((128,256), PIL.Image.NEAREST),
-                                                torchvision.transforms.CenterCrop((128,256)),
-                                                ])
-        if self._transforms_target != None:
+        if self._transforms_target :
             mask = self._transforms_target(mask)
-        else:
-            mask = transform_target(mask)
             
         mask = np.array(mask)
         obj_ids = np.unique(mask)
