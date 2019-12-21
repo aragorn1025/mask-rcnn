@@ -35,9 +35,9 @@ if __name__ == '__main__':
         engine.load(args['weights'])
     if not os.path.isdir('weights'):
         os.mkdir('weights')
-	for i in range(0, args['epoch']):
+    for i in range(0, args['epoch']):
         _, loss_train = engine.do('train', data_loader_train)
         _, loss_testt = engine.do('test', data_loader_testt)
         print('Epoch [%d]: %.8f, %.8f' % (i, loss_train, loss_testt))
-	    engine.save(os.path.join('weights', 'weights.pth'))
+        engine.save(os.path.join('weights', 'weights.pth'))
     print('Training done.')

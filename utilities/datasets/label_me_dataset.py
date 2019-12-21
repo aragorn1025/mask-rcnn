@@ -173,14 +173,3 @@ class LabelMeDataset(torch.utils.data.Dataset):
                 
         lbl = LabelMeDataset._shapes_to_label(img_shape, shapes, label_name_to_value)
         return lbl, label_name_to_value
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    

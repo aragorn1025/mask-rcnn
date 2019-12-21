@@ -22,15 +22,15 @@ pip install -r requirements.txt
 |- data                    // 資料
 |  |- dataset
 |- outputs                 // 輸出檔案
+|- weights                 // 網路鍵結值
+|  |- weights.pth
 |- utilities               // 模組
 |  |- datasets             // 資料集讀取模組
 |  |- models               // 網路模型模組
-|  |- Engine.py            // 模組主引擎
-|- weights                 // 網路鍵結值
-|  |- weights.pth
+|  |- tools                // 其他工具
+|  |- engine.py            // 模組主引擎
+|- requirements.txt        // 安裝所需模組
 |- main.ipynb              // 程式碼執行結果
-|- requirements.txt
 |- test.py
 |- train.py
 ```
-
