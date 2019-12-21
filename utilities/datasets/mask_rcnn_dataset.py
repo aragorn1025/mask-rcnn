@@ -30,15 +30,12 @@ class MaskRCNNDataset(torch.utils.data.Dataset):
             target = {}
             return image, target
 
-        mask = PIL.Image.open(self._masks[index])
-        if self._transforms_target:
-            mask = self._transforms_target(mask)
         target = self._get_target(mask)
         target["image_id"] = torch.tensor([index])
 
         return image, target
 
-    def _get_target(self, mask):
+    def _get_target(self, index):
         raise NotImplementedError('MaskRCNNDataset._get_target(self, mask) is not implement yet.')
 
     def __len__(self):

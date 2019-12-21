@@ -20,7 +20,10 @@ class CityscapesDataset(MaskRCNNDataset):
                                                 transforms,
                                                 transforms_target)
 
-    def _get_target(self, mask):
+    def _get_target(self, index):
+        mask = PIL.Image.open(self._masks[index])
+        if self._transforms_target:
+            mask = self._transforms_target(mask)
         mask = np.array(mask)
         # reference: https://github.com/mcordts/cityscapesScripts/blob/master/cityscapesscripts/helpers/labels.py
         mask = np.where(mask < 24 * 1000, 0, mask)
