@@ -15,25 +15,38 @@ import json
 
 class LabelMeDataset(torch.utils.data.Dataset):
     
-    def __init__(self, jsons_root, jsons_file_name = '*', transforms = None, transforms_target = None):
-        self._jsons = sorted(glob.glob(os.path.join(jsons_root, jsons_file_name)))
+    def __init__(self, images_root, 
+                 image_extension, 
+                 masks_root, 
+                 images_file_name = '*',
+                 masks_file_name = '*', 
+                 transforms = None, 
+                 transforms_target = None):        
+#        super(LabelMeDataset, self).__init__(images_root,
+#                                             masks_root,
+#                                             "*.%s"% image_extension,
+#                                             "*",
+#                                             transforms,
+#                                             transforms_target)
+        
+        self._images = sorted(glob.glob(os.path.join(images_root, images_file_name)))
+        self._masks = sorted(glob.glob(os.path.join(masks_root, masks_file_name)))
         
         self._transforms = transforms if transforms else torchvision.transforms.ToTensor()
         self._transforms_target = transforms_target
 
 
     def __getitem__(self, index):
-        if os.path.isfile(self._jsons[index]):
-            data = json.load(open(self._jsons[index]))
-            image = LabelMeDataset._img_b64_to_arr(data['imageData'])
-            label, label_names = LabelMeDataset._labelme_shapes_to_label(image.shape, data['shapes'])
-            image = PIL.Image.fromarray(image)
-            mask = PIL.Image.fromarray(label)
-            labels=[]
-            for label_name in label_names:
-                labels.append(label_name)
+        data = json.load(open(self._masks[index]))
+        image = PIL.Image.open(self._images[index]).convert("RGB")
+        image_json = LabelMeDataset._img_b64_to_arr(data['imageData'])
+        label, label_names = LabelMeDataset._labelme_shapes_to_label(image_json.shape, data['shapes'])
+        mask = PIL.Image.fromarray(label)
+        labels=[]
+        for label_name in label_names:
+            labels.append(label_name)
                 
-        image = self._transforms(image)
+#        image = self._transforms(image)
 
         if self._transforms_target :
             mask = self._transforms_target(mask)
