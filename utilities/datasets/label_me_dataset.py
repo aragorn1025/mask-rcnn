@@ -1,4 +1,3 @@
-import glob
 import base64
 import io
 import numpy as np
@@ -6,14 +5,12 @@ import PIL.Image
 import PIL.ImageDraw
 import math
 
-import os
 import torch
 import torch.utils.data
 import PIL
-import torchvision.transforms
 import json
 
-class LabelMeDataset(torch.utils.data.Dataset):
+class LabelMeDataset(MaskRCNNDataset):
     
     def __init__(self, images_root, 
                  image_extension, 
@@ -22,23 +19,16 @@ class LabelMeDataset(torch.utils.data.Dataset):
                  masks_file_name = '*', 
                  transforms = None, 
                  transforms_target = None):        
-#        super(LabelMeDataset, self).__init__(images_root,
-#                                             masks_root,
-#                                             "*.%s"% image_extension,
-#                                             "*",
-#                                             transforms,
-#                                             transforms_target)
-        
-        self._images = sorted(glob.glob(os.path.join(images_root, images_file_name)))
-        self._masks = sorted(glob.glob(os.path.join(masks_root, masks_file_name)))
-        
-        self._transforms = transforms if transforms else torchvision.transforms.ToTensor()
-        self._transforms_target = transforms_target
+        super(LabelMeDataset, self).__init__(images_root,
+                                             masks_root,
+                                             "*.%s"% image_extension,
+                                             "*.json",
+                                             transforms,
+                                             transforms_target)
 
 
-    def __getitem__(self, index):
-        data = json.load(open(self._masks[index]))
-        image = PIL.Image.open(self._images[index]).convert("RGB")
+    def _get_target(self, index):
+        data = json.load(open(self._masks[index]))       
         image_json = LabelMeDataset._img_b64_to_arr(data['imageData'])
         label, label_names = LabelMeDataset._labelme_shapes_to_label(image_json.shape, data['shapes'])
         mask = PIL.Image.fromarray(label)
@@ -46,7 +36,6 @@ class LabelMeDataset(torch.utils.data.Dataset):
         for label_name in label_names:
             labels.append(label_name)
                 
-#        image = self._transforms(image)
 
         if self._transforms_target :
             mask = self._transforms_target(mask)
@@ -89,10 +78,7 @@ class LabelMeDataset(torch.utils.data.Dataset):
         target["iscrowd"] = iscrowd
                     
 
-        return image, target
-
-    def __len__(self):
-        return len(self._json)
+        return target
     
     def _img_b64_to_arr(img_b64):
         f = io.BytesIO()
