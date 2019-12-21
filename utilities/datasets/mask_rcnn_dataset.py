@@ -30,7 +30,7 @@ class MaskRCNNDataset(torch.utils.data.Dataset):
             target = {}
             return image, target
 
-        target = self._get_target(mask)
+        target = self._get_target(index)
         target["image_id"] = torch.tensor([index])
 
         return image, target
