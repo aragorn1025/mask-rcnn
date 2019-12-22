@@ -3,6 +3,7 @@ import math
 
 import torch
 import PIL
+import PIL.ImageDraw
 import json
 from .mask_rcnn_dataset import MaskRCNNDataset
 
