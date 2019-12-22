@@ -13,6 +13,7 @@ class Engine:
 
     def get_outputs(self, inputs):
         inputs = inputs.to(self._device)
+        self._model.eval()
         return self._model(inputs)
 
     def do(self, action, data_loader):
