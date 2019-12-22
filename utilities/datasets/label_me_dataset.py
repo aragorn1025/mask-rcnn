@@ -4,6 +4,7 @@ import math
 import torch
 import PIL
 import json
+from .mask_rcnn_dataset import MaskRCNNDataset
 
 class LabelMeDataset(MaskRCNNDataset):
     
