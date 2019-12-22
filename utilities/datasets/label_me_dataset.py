@@ -1,22 +1,16 @@
-import base64
-import io
 import numpy as np
-import PIL.Image
-import PIL.ImageDraw
 import math
 
 import torch
-import torch.utils.data
 import PIL
 import json
 
 class LabelMeDataset(MaskRCNNDataset):
     
-    def __init__(self, images_root, 
-                 image_extension, 
-                 masks_root, 
-                 images_file_name = '*',
-                 masks_file_name = '*', 
+    def __init__(self, 
+                 images_root, 
+                 masks_root,
+                 image_extension,
                  transforms = None, 
                  transforms_target = None):        
         super(LabelMeDataset, self).__init__(images_root,
@@ -26,17 +20,20 @@ class LabelMeDataset(MaskRCNNDataset):
                                              transforms,
                                              transforms_target)
 
-
     def _get_target(self, index):
-        data = json.load(open(self._masks[index]))       
-        image_json = LabelMeDataset._img_b64_to_arr(data['imageData'])
-        label, label_names = LabelMeDataset._labelme_shapes_to_label(image_json.shape, data['shapes'])
+        data = json.load(open(self._masks[index]))   
+        
+        imageHeight = data['imageHeight']
+        imageWidth = data['imageWidth']
+        img_arr_shape = imageHeight, imageWidth, 3
+        
+        label, label_names = LabelMeDataset._labelme_shapes_to_label(img_arr_shape, data['shapes'])
+
         mask = PIL.Image.fromarray(label)
         labels=[]
         for label_name in label_names:
             labels.append(label_name)
                 
-
         if self._transforms_target :
             mask = self._transforms_target(mask)
             
@@ -64,7 +61,6 @@ class LabelMeDataset(MaskRCNNDataset):
 
         masks = torch.as_tensor(masks, dtype=torch.uint8)
 
-        image_id = torch.tensor([index])
         area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
 
         iscrowd = torch.zeros((num_objs,), dtype=torch.int64)
@@ -73,18 +69,10 @@ class LabelMeDataset(MaskRCNNDataset):
         target["boxes"] = boxes
         target["labels"] = labels
         target["masks"] = masks
-        target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = iscrowd
                     
-
         return target
-    
-    def _img_b64_to_arr(img_b64):
-        f = io.BytesIO()
-        f.write(base64.b64decode(img_b64))
-        img_arr = np.array(PIL.Image.open(f))
-        return img_arr
     
     def _shape_to_mask(img_shape, points, shape_type=None,
                       line_width=10, point_size=5):
