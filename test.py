@@ -6,9 +6,9 @@ import PIL
 import cv2
 import torchvision
 import matplotlib.pyplot as plt
-import utilities.engine as engine
-import utilities.models.mask_rcnn as mask_rcnn
-import utilities.tools.instance_segmentation as instance_segmentation
+import utilities.engine
+import utilities.models.mask_rcnn
+import utilities.tools.instance_segmentation
 
 def get_predictions(image, engine, threshold, category_names):
     device = torch.device('cpu')
@@ -50,7 +50,7 @@ def show_predictions(image, masks, boxes, labels):
     text_thickness = 2
     result = np.copy(image)
     for i in range(0, n):
-        colored_mask = instance_segmentation.get_random_colored_mask(masks[i])
+        colored_mask = utilities.tools.instance_segmentation.get_random_colored_mask(masks[i])
         result = cv2.addWeighted(result, 1, colored_mask, 0.5, 0)
         cv2.rectangle(result, boxes[i][0], boxes[i][1], color = (0, 255, 0), thickness = rectangle_thickness)
         cv2.putText(result, str(labels[i]), boxes[i][0], cv2.FONT_HERSHEY_SIMPLEX,
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     if args['output'] == None:
         raise ValueError('The outputs file path should be set.')
         
-    engine = engine.Engine(model = mask_rcnn.MaskRCNN(number_classes = 11), device = torch.device('cpu'))
+    engine = utilities.engine.Engine(model = utilities.models.mask_rcnn.MaskRCNN(number_classes = 11), device = torch.device('cpu'))
     #engine.load(args['weights'])
 
     image = PIL.Image.open(args['input'])
