@@ -6,10 +6,9 @@ import PIL
 import cv2
 import torchvision
 import matplotlib.pyplot as plt
+import utilities.engine as engine
+import utilities.models.mask_rcnn as mask_rcnn
 import utilities.tools.instance_segmentation as instance_segmentation
-from utilities.engine import Engine
-from utilities.models.mask_rcnn import MaskRCNN
-
 
 def get_predictions(image, engine, threshold, category_names):
     device = torch.device('cpu')
@@ -91,7 +90,7 @@ if __name__ == '__main__':
     if args['output'] == None:
         raise ValueError('The outputs file path should be set.')
         
-    engine = Engine(model = MaskRCNN(number_classes = 11), device = torch.device('cpu'))
+    engine = engine.Engine(model = mask_rcnn.MaskRCNN(number_classes = 11), device = torch.device('cpu'))
     #engine.load(args['weights'])
 
     image = PIL.Image.open(args['input'])
