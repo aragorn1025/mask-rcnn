@@ -1,57 +1,45 @@
-import base64
-import io
 import numpy as np
-import PIL.Image
-import PIL.ImageDraw
 import math
 
-import os
 import torch
-import torch.utils.data
 import PIL
-import torchvision.transforms
+import PIL.ImageDraw
 import json
+from .mask_rcnn_dataset import MaskRCNNDataset
 
-class LabelMeDataset(torch.utils.data.Dataset):
+class LabelMeDataset(MaskRCNNDataset):
     
-    def __init__(self, root, transforms = None, transforms_target = None):
-        self._root = root
-        self._transforms = transforms
-        self._transforms_target = transforms_target
+    def __init__(self, 
+                 images_root, 
+                 masks_root,
+                 image_extension,
+                 transforms = None, 
+                 transforms_target = None):        
+        super(LabelMeDataset, self).__init__(images_root,
+                                             masks_root,
+                                             "*.%s"% image_extension,
+                                             "*.json",
+                                             transforms,
+                                             transforms_target)
 
-        self._json = list(sorted(os.listdir(os.path.join(root))))
+    def _get_target(self, index):
+        data = json.load(open(self._masks[index]))   
+        
+        imageHeight = data['imageHeight']
+        imageWidth = data['imageWidth']
+        img_arr_shape = imageHeight, imageWidth, 3
+        
+        label, label_names = LabelMeDataset._labelme_shapes_to_label(img_arr_shape, data['shapes'])
 
-    def __getitem__(self, index):
-        json_path = os.path.join(self._root, self._json[index])
-        if os.path.isfile(json_path):
-            data = json.load(open(json_path))
-            image = LabelMeDataset._img_b64_to_arr(data['imageData'])
-            label, label_names = LabelMeDataset._labelme_shapes_to_label(image.shape, data['shapes'])
-            image = PIL.Image.fromarray(image)
-            mask = PIL.Image.fromarray(label)
-            labels=[]
-            for label_name in label_names:
-                labels.append(label_name)
+        mask = PIL.Image.fromarray(label)
+        labels=[]
+        for label_name in label_names:
+            labels.append(label_name)
                 
-        transform = torchvision.transforms.Compose([torchvision.transforms.Resize((128,256)),
-                                        torchvision.transforms.CenterCrop((128,256)),
-                                        torchvision.transforms.ToTensor(),
-                                        ])
-        if self._transforms != None:
-            image = self._transforms(image)
-        else:
-            image = transform(image)
-
-        transform_target = torchvision.transforms.Compose([torchvision.transforms.Resize((128,256), PIL.Image.NEAREST),
-                                                torchvision.transforms.CenterCrop((128,256)),
-                                                ])
-        if self._transforms_target != None:
+        if self._transforms_target :
             mask = self._transforms_target(mask)
-        else:
-            mask = transform_target(mask)
             
         mask = np.array(mask)
-        
         obj_ids = np.unique(mask)
         obj_ids = obj_ids[1:]
 
@@ -71,11 +59,10 @@ class LabelMeDataset(torch.utils.data.Dataset):
         labels = labels[1:]
         labels = list(map(int, labels))
         labels = np.array(labels)
-        labels = torch.tensor(labels, dtype=torch.int64)
+        labels = torch.tensor(labels/1000, dtype=torch.int64)
 
         masks = torch.as_tensor(masks, dtype=torch.uint8)
 
-        image_id = torch.tensor([index])
         area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
 
         iscrowd = torch.zeros((num_objs,), dtype=torch.int64)
@@ -84,21 +71,10 @@ class LabelMeDataset(torch.utils.data.Dataset):
         target["boxes"] = boxes
         target["labels"] = labels
         target["masks"] = masks
-        target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = iscrowd
                     
-
-        return image, target
-
-    def __len__(self):
-        return len(self._json)
-    
-    def _img_b64_to_arr(img_b64):
-        f = io.BytesIO()
-        f.write(base64.b64decode(img_b64))
-        img_arr = np.array(PIL.Image.open(f))
-        return img_arr
+        return target
     
     def _shape_to_mask(img_shape, points, shape_type=None,
                       line_width=10, point_size=5):
@@ -137,12 +113,15 @@ class LabelMeDataset(torch.utils.data.Dataset):
         if type == 'instance':
             ins = np.zeros(img_shape[:2], dtype=np.int32)
             instance_names = ['_background_']
+        value = {'_background_': 0}
         for shape in shapes:
             points = shape['points']
             label = shape['label']
+            value_value = len(value)
             shape_type = shape.get('shape_type', None)
             if type == 'class':
-                cls_name = label
+                cls_name = str(int(label)*1000 + len(value))
+                value[cls_name] = value_value
             elif type == 'instance':
                 cls_name = label.split('-')[0]
                 if label not in instance_names:
@@ -151,6 +130,7 @@ class LabelMeDataset(torch.utils.data.Dataset):
             cls_id = label_name_to_value[cls_name]
             mask = LabelMeDataset._shape_to_mask(img_shape[:2], points, shape_type)
             cls[mask] = cls_id
+            
             if type == 'instance':
                 ins[mask] = ins_id
                 
@@ -162,12 +142,10 @@ class LabelMeDataset(torch.utils.data.Dataset):
         
         label_name_to_value = {'_background_': 0}
         for shape in shapes:
-            label_name = shape['label']
-            if label_name in label_name_to_value:
-                label_value = label_name_to_value[label_name]
-            else:
-                label_value = len(label_name_to_value)
-                label_name_to_value[label_name] = label_value
+            label_name = shape['label'] 
+            label_value = len(label_name_to_value)
+            label_name=str(int(label_name)*1000+len(label_name_to_value))
+            label_name_to_value[label_name] = label_value
                 
         lbl = LabelMeDataset._shapes_to_label(img_shape, shapes, label_name_to_value)
         return lbl, label_name_to_value
