@@ -12,7 +12,6 @@ class Engine:
         self._model.to(self._device)
 
     def get_outputs(self, inputs):
-        inputs = inputs.to(self._device)
         self._model.eval()
         return self._model(inputs)
 
@@ -55,6 +54,7 @@ class Engine:
         return (time_end - time_start, running_loss / len(data_loader))
 
     def _forward(self, inputs):
+        inputs = inputs.to(self._device)
         return self.get_outputs(inputs)
 
     def _get_loss(self, outputs, targets):

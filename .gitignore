@@ -1,8 +1,17 @@
+# temp files
 *~
 *.pyc
 .ipynb_checkpoints/
 __pycache__/
 
+# data and labels
+*.jpeg
+*.jpg
+*.png
+*.json
+*.names
+
+# data, outputs, weights directory
 data/
 outputs/
 weights/
