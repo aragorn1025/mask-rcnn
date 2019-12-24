@@ -72,11 +72,11 @@ def PIL_to_tensor(image):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Instance detection using Mask R-CNN .')
     parser.add_argument('-f')
-    parser.add_argument('--weights', type=str, default = './weights/mask-rcnn-cityscapes.pth',
+    parser.add_argument('--weights', type=str, default = './weights/weights.pth',
         help='The weights to loaded')
-    parser.add_argument('--input', type=str, default = './test/007c1782-671f-47e3-9cf1-98e4fb001367.mov-0001.jpg',
+    parser.add_argument('--input', type=str,
         help='The path of file')
-    parser.add_argument('--output', type=str, default = './output',
+    parser.add_argument('--output', type=str, default = './outputs/output.png',
         help='The path to save')
     args = vars(parser.parse_args())
     if args['weights'] == None:
