@@ -9,12 +9,8 @@ class MaskRCNN(torch.nn.Module):
         box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(box_predictor_features, number_classes)
         self._model.roi_heads.box_predictor = box_predictor
         mask_predictor_features = self._model.roi_heads.mask_predictor.conv5_mask.in_channels
-        mask_predictor = torchvision.models.detection.mask_rcnn.MaskRCNNPredictor(mask_predictor_features,
-                                                                                  number_hidden_layer,
-                                                                                  number_classes)
-        self._model.roi_heads.mask_predictor = torchvision.models.detection.mask_rcnn.MaskRCNNPredictor(mask_predictor_features,
-                                                                                                        number_hidden_layer,
-                                                                                                        number_classes)
+        mask_predictor = torchvision.models.detection.mask_rcnn.MaskRCNNPredictor(mask_predictor_features, number_hidden_layer, number_classes)
+        self._model.roi_heads.mask_predictor = torchvision.models.detection.mask_rcnn.MaskRCNNPredictor(mask_predictor_features, number_hidden_layer, number_classes)
 
     def forward(self, images, targets=None):
         return self._model(images, targets)

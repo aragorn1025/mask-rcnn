@@ -6,9 +6,7 @@ class Engine:
         self._model = model
         self._criterion = criterion
         self._optimizer = optimizer
-        if device == None:
-            device = Engine.get_device()
-        self._device = device
+        self._device = Engine.get_device(device)
         self._model.to(self._device)
 
     def get_outputs(self, inputs):
@@ -66,5 +64,19 @@ class Engine:
         loss.backward()
         self._optimizer.step()
 
-    def get_device():
-        return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    def get_device(device=None):
+        if not device:
+            return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if type(device) is not str:
+            return torch.device('cpu')
+        if device.lower() in ['gpu', 'cuda']:
+            return Engine.get_device()
+        if not re.compile('cuda*').match(device):
+            return torch.device('cpu')
+        try:
+            device_name = torch.cuda.get_device_name(int(device.replace('cuda:', '')))
+            return torch.device('cuda')
+        except AssertionError:
+            return torch.device('cpu')
+        except ValueError:
+            return torch.device('cpu')
