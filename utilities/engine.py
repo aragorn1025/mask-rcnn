@@ -1,5 +1,7 @@
+import re
 import time
 import torch
+import torchvision
 
 class Engine:
     def __init__(self, model, criterion = None, optimizer = None, device = None):
@@ -9,9 +11,11 @@ class Engine:
         self._device = Engine.get_device(device)
         self._model.to(self._device)
 
-    def get_outputs(self, inputs):
+    def get_outputs(self, image):
+        inputs = torchvision.transforms.ToTensor()(image)
+        inputs = inputs.to(self._device)
         self._model.eval()
-        return self._model(inputs)
+        return self._model([inputs])
 
     def do(self, action, data_loader):
         if action == 'train':
@@ -53,7 +57,8 @@ class Engine:
 
     def _forward(self, inputs):
         inputs = inputs.to(self._device)
-        return self.get_outputs(inputs)
+        self._model.eval()
+        return self._model(inputs)
 
     def _get_loss(self, outputs, targets):
         targets = targets.to(self._device)

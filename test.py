@@ -3,16 +3,14 @@ import cv2
 import numpy as np
 import os
 import torch
-import torchvision
 
 import utilities.engine
 import utilities.models.mask_rcnn
 import utilities.tools.general
 import utilities.tools.instance_segmentation
 
-def get_predictions(image, engine, threshold, category_names):
-    image = torchvision.transforms.ToTensor()(image)
-    predictions = engine.get_outputs([image])[0]
+def get_predictions(engine, category_names, image, threshold):
+    predictions = engine.get_outputs(image)[0]
     scores = list(predictions['scores'].detach().cpu().numpy())
 
     predictions_pass_threshold = [scores.index(x) for x in scores if x > threshold]
@@ -31,24 +29,6 @@ def get_predictions(image, engine, threshold, category_names):
     boxes = boxes[:predictions_pass_threshold_last_index + 1]
     labels = labels[:predictions_pass_threshold_last_index + 1]    
     return masks, boxes, labels
-
-def print_message(n):
-    if n < 1:
-        print("There is no prediction.")
-    elif n == 1:
-        print("There is 1 prediction.")
-    else:
-        print("There are %d predictions." % n)
-
-def get_masked_image(image, predictions, rectangle_thickness = 2, text_size = 1, text_thickness = 2):
-    masks, boxes, labels = predictions
-    result = np.copy(image)
-    for i in range(0, len(labels)):
-        colored_mask = utilities.tools.instance_segmentation.get_random_colored_mask(masks[i])
-        result = cv2.addWeighted(result, 1, colored_mask, 0.5, 0)
-        cv2.rectangle(result, boxes[i][0], boxes[i][1], color = (0, 255, 0), thickness = rectangle_thickness)
-        cv2.putText(result, str(labels[i]), boxes[i][0], cv2.FONT_HERSHEY_SIMPLEX, text_size, (0,255,0), thickness = text_thickness)
-    return result
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Instance detection using Mask R-CNN.')
@@ -82,12 +62,9 @@ if __name__ == '__main__':
         device = None if args['to_use_gpu'] else torch.device('cpu')
     )
     engine.load(args['weights'])
-    image = cv2.imread(args['input'])
     classes = utilities.tools.general.get_classes(args['classes'])
-
-    masks, boxes, labels = get_predictions(image, engine, args['threshold'], classes)
-    n = len(labels)
+    image = cv2.imread(args['input'])
+    masks, boxes, labels = get_predictions(engine, classes, image, args['threshold'])
     if args['to_print_message']:
-        print_message(n)
-    result = get_masked_image(image, (masks, boxes, labels))
-    cv2.imwrite(args['output'], result)
+        utilities.tools.general.print_predictions_number(len(labels))
+    cv2.imwrite(args['output'], utilities.tools.instance_segmentation.get_masked_image(image, (masks, boxes, labels)))
