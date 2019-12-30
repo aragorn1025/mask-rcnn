@@ -31,25 +31,25 @@ def get_predictions(engine, category_names, image, threshold):
     return masks, boxes, labels
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Instance detection using Mask R-CNN.')
-    parser.add_argument('--weights', type=str, default = './weights/weights.pth',
-        help='The weights to loaded')
-    parser.add_argument('--classes', type=str, default = './data/classes.names',
-        help='The names of the classes')
-    parser.add_argument('--input', type=str,
-        help='The path of file')
-    parser.add_argument('--output', type=str, default = './outputs/output.png',
-        help='The path to save')
-    parser.add_argument('--threshold', type=float, default = 0.8,
-        help='Threshold for the mask')
-    parser.add_argument('--to_print_message', dest='to_print_message', action='store_true',
-        help='to print message at the terminal')
-    parser.set_defaults(to_print_message=False)
-    parser.add_argument('--to_use_gpu', dest='to_use_gpu', action='store_true',
-        help='to use GPU if available')
-    parser.add_argument('--to_use_cpu', dest='to_use_gpu', action='store_false',
-        help='use CPU rather than GPU')
-    parser.set_defaults(to_use_gpu=True)
+    parser = argparse.ArgumentParser(description = 'Instance detection using Mask R-CNN.')
+    parser.add_argument('--weights', type = str, default = './weights/weights.pth',
+        help = 'The weights to loaded')
+    parser.add_argument('--classes', type = str, default = './data/classes.names',
+        help = 'The names of the classes')
+    parser.add_argument('--input', type = str,
+        help = 'The path of file')
+    parser.add_argument('--output', type = str, default = './outputs/output.png',
+        help = 'The path to save')
+    parser.add_argument('--threshold', type = float, default = 0.8,
+        help = 'Threshold for the mask')
+    parser.add_argument('--to_print_message', dest = 'to_print_message', action = 'store_true',
+        help = 'to print message at the terminal')
+    parser.set_defaults(to_print_message = False)
+    parser.add_argument('--to_use_gpu', dest = 'to_use_gpu', action = 'store_true',
+        help = 'to use GPU if available')
+    parser.add_argument('--to_use_cpu', dest = 'to_use_gpu', action = 'store_false',
+        help = 'use CPU rather than GPU')
+    parser.set_defaults(to_use_gpu = True)
     args = vars(parser.parse_args())
     for k in ['weights', 'classes', 'input']:
         if args[k] == None:
