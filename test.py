@@ -1,34 +1,11 @@
 import argparse
 import cv2
-import numpy as np
 import os
-import torch
 
 import utilities.engine
 import utilities.models.mask_rcnn
 import utilities.tools.general
 import utilities.tools.instance_segmentation
-
-def get_predictions(engine, category_names, image, threshold):
-    predictions = engine.get_outputs(image)[0]
-    scores = list(predictions['scores'].detach().cpu().numpy())
-
-    predictions_pass_threshold = [scores.index(x) for x in scores if x > threshold]
-    if len(predictions_pass_threshold) == 0:
-        return None, None, []
-    predictions_pass_threshold_last_index = [scores.index(x) for x in scores if x > threshold][-1]
-
-    masks = (predictions['masks'] > 0.5).squeeze().detach().cpu().numpy()
-    boxes = [[(i[0], i[1]), (i[2], i[3])] for i in list(predictions['boxes'].detach().cpu().numpy())]
-    labels = [category_names[i] for i in list(predictions['labels'].cpu().numpy())]
-
-    if predictions_pass_threshold_last_index > 0:
-        masks = masks[:predictions_pass_threshold_last_index + 1]
-    elif len(masks.shape) == 2:
-        masks = np.asarray([masks])
-    boxes = boxes[:predictions_pass_threshold_last_index + 1]
-    labels = labels[:predictions_pass_threshold_last_index + 1]    
-    return masks, boxes, labels
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'Instance detection using Mask R-CNN.')
@@ -59,12 +36,12 @@ if __name__ == '__main__':
 
     engine = utilities.engine.Engine(
         model = utilities.models.mask_rcnn.MaskRCNN(number_classes = 10 + 1),
-        device = None if args['to_use_gpu'] else torch.device('cpu')
+        device = args['to_use_gpu']
     )
     engine.load(args['weights'])
-    classes = utilities.tools.general.get_classes(args['classes'])
+    class_names = utilities.tools.general.get_classes(args['classes'])
     image = cv2.imread(args['input'])
-    masks, boxes, labels = get_predictions(engine, classes, image, args['threshold'])
+    masks, boxes, labels = utilities.tools.instance_segmentation.get_predictions(engine, class_names, image, threshold = args['threshold'])
     if args['to_print_message']:
         utilities.tools.general.print_predictions_number(len(labels))
     cv2.imwrite(args['output'], utilities.tools.instance_segmentation.get_masked_image(image, (masks, boxes, labels)))

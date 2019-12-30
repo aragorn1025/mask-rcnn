@@ -11,8 +11,9 @@ class Engine:
         self._device = Engine.get_device(device)
         self._model.to(self._device)
 
-    def get_outputs(self, image):
-        inputs = torchvision.transforms.ToTensor()(image)
+    def get_outputs(self, inputs, is_tensor = False):
+        if not is_tensor:
+            inputs = torchvision.transforms.ToTensor()(inputs)
         inputs = inputs.to(self._device)
         self._model.eval()
         return self._model([inputs])
