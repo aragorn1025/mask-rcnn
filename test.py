@@ -25,7 +25,7 @@ if __name__ == '__main__':
     parser.add_argument('--to_use_gpu', dest = 'to_use_gpu', action = 'store_true',
         help = 'to use GPU if available')
     parser.add_argument('--to_use_cpu', dest = 'to_use_gpu', action = 'store_false',
-        help = 'use CPU rather than GPU')
+        help = 'to use CPU rather than GPU')
     parser.set_defaults(to_use_gpu = True)
     args = vars(parser.parse_args())
     for k in ['weights', 'classes', 'input']:
