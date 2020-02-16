@@ -83,8 +83,9 @@ class Engine:
         if not re.compile('cuda*').match(device):
             return torch.device('cpu')
         try:
-            device_name = torch.cuda.get_device_name(int(device.replace('cuda:', '')))
-            return torch.device('cuda')
+            device_id = int(device.replace('cuda:', ''))
+            device_name = torch.cuda.get_device_name(device_id)
+            return torch.device('cuda:%d' % device_id)
         except AssertionError:
             return torch.device('cpu')
         except ValueError:
