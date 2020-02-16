@@ -1,0 +1,4 @@
+Pillow
+matplotlib
+numpy
+cython
