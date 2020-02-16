@@ -1,15 +1,11 @@
-import copy
-import os
-from PIL import Image
-
+#import copy
+#import os
+import pycocotools.coco
 import torch
-import torch.utils.data
 import torchvision
 
-from pycocotools import mask as coco_mask
-from pycocotools.coco import COCO
 
-
+'''
 class FilterAndRemapCocoCategories(object):
     def __init__(self, categories, remap=True):
         self.categories = categories
@@ -26,13 +22,13 @@ class FilterAndRemapCocoCategories(object):
             obj["category_id"] = self.categories.index(obj["category_id"])
         target["annotations"] = anno
         return image, target
-
-
+'''
+'''
 def convert_coco_poly_to_mask(segmentations, height, width):
     masks = []
     for polygons in segmentations:
-        rles = coco_mask.frPyObjects(polygons, height, width)
-        mask = coco_mask.decode(rles)
+        rles = pycocotools.mask.frPyObjects(polygons, height, width)
+        mask = pycocotools.mask.decode(rles)
         if len(mask.shape) < 3:
             mask = mask[..., None]
         mask = torch.as_tensor(mask, dtype=torch.uint8)
@@ -43,8 +39,8 @@ def convert_coco_poly_to_mask(segmentations, height, width):
     else:
         masks = torch.zeros((0, height, width), dtype=torch.uint8)
     return masks
-
-
+'''
+'''
 class ConvertCocoPolysToMask(object):
     def __call__(self, image, target):
         w, h = image.size
@@ -99,8 +95,8 @@ class ConvertCocoPolysToMask(object):
         target["iscrowd"] = iscrowd
 
         return image, target
-
-
+'''
+'''
 def _coco_remove_images_without_annotations(dataset, cat_list=None):
     def _has_only_empty_bbox(anno):
         return all(any(o <= 1 for o in obj["bbox"][2:]) for obj in anno)
@@ -139,10 +135,10 @@ def _coco_remove_images_without_annotations(dataset, cat_list=None):
 
     dataset = torch.utils.data.Subset(dataset, ids)
     return dataset
-
+'''
 
 def convert_to_coco_api(ds):
-    coco_ds = COCO()
+    coco_ds = pycocotools.coco.COCO()
     ann_id = 0
     dataset = {'images': [], 'categories': [], 'annotations': []}
     categories = set()
@@ -164,7 +160,7 @@ def convert_to_coco_api(ds):
         iscrowd = targets['iscrowd'].tolist()
         if 'masks' in targets:
             masks = targets['masks']
-            # make masks Fortran contiguous for coco_mask
+            # make masks Fortran contiguous for pycocotools.mask
             masks = masks.permute(0, 2, 1).contiguous().permute(0, 2, 1)
         if 'keypoints' in targets:
             keypoints = targets['keypoints']
@@ -180,7 +176,7 @@ def convert_to_coco_api(ds):
             ann['iscrowd'] = iscrowd[i]
             ann['id'] = ann_id
             if 'masks' in targets:
-                ann["segmentation"] = coco_mask.encode(masks[i].numpy())
+                ann["segmentation"] = pycocotools.mask.encode(masks[i].numpy())
             if 'keypoints' in targets:
                 ann['keypoints'] = keypoints[i]
                 ann['num_keypoints'] = sum(k != 0 for k in keypoints[i][2::3])
@@ -202,7 +198,7 @@ def get_coco_api_from_dataset(dataset):
         return dataset.coco
     return convert_to_coco_api(dataset)
 
-
+'''
 class CocoDetection(torchvision.datasets.CocoDetection):
     def __init__(self, img_folder, ann_file, transforms):
         super(CocoDetection, self).__init__(img_folder, ann_file)
@@ -216,8 +212,8 @@ class CocoDetection(torchvision.datasets.CocoDetection):
             # img, target = self._transforms(img, target)
             img = self._transforms(img)
         return img, target
-
-
+'''
+'''
 def get_coco(root, image_set, transforms, mode='instances'):
     anno_file_template = "{}_{}2017.json"
     PATHS = {
@@ -244,7 +240,8 @@ def get_coco(root, image_set, transforms, mode='instances'):
     # dataset = torch.utils.data.Subset(dataset, [i for i in range(500)])
 
     return dataset
-
-
+'''
+'''
 def get_coco_kp(root, image_set, transforms):
     return get_coco(root, image_set, transforms, mode="person_keypoints")
+'''

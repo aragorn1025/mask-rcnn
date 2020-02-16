@@ -1,17 +1,12 @@
-import json
-import tempfile
-
-import numpy as np
+import collections
 import copy
-import time
+import json
+import numpy as np
+import pycocotools.coco
+import pycocotools.cocoeval
+import pycocotools.mask
+#import time
 import torch
-import torch._six
-
-from pycocotools.cocoeval import COCOeval
-from pycocotools.coco import COCO
-import pycocotools.mask as mask_util
-
-from collections import defaultdict
 
 from . import utils
 
@@ -25,7 +20,7 @@ class CocoEvaluator(object):
         self.iou_types = iou_types
         self.coco_eval = {}
         for iou_type in iou_types:
-            self.coco_eval[iou_type] = COCOeval(coco_gt, iouType=iou_type)
+            self.coco_eval[iou_type] = pycocotools.cocoeval.COCOeval(coco_gt, iouType=iou_type)
 
         self.img_ids = []
         self.eval_imgs = {k: [] for k in iou_types}
@@ -36,7 +31,7 @@ class CocoEvaluator(object):
 
         for iou_type in self.iou_types:
             results = self.prepare(predictions, iou_type)
-            coco_dt = loadRes(self.coco_gt, results) if results else COCO()
+            coco_dt = loadRes(self.coco_gt, results) if results else pycocotools.coco.COCO()
             coco_eval = self.coco_eval[iou_type]
 
             coco_eval.cocoDt = coco_dt
@@ -92,7 +87,7 @@ class CocoEvaluator(object):
                 ]
             )
         return coco_results
-
+'''
     def prepare_for_coco_segmentation(self, predictions):
         coco_results = []
         for original_id, prediction in predictions.items():
@@ -109,7 +104,7 @@ class CocoEvaluator(object):
             labels = prediction["labels"].tolist()
 
             rles = [
-                mask_util.encode(np.array(mask[0, :, :, np.newaxis], order="F"))[0]
+                pycocotools.mask.encode(np.array(mask[0, :, :, np.newaxis], order="F"))[0]
                 for mask in masks
             ]
             for rle in rles:
@@ -153,7 +148,7 @@ class CocoEvaluator(object):
                 ]
             )
         return coco_results
-
+'''
 
 def convert_to_xywh(boxes):
     xmin, ymin, xmax, ymax = boxes.unbind(1)
@@ -204,7 +199,7 @@ def createIndex(self):
     # create index
     # print('creating index...')
     anns, cats, imgs = {}, {}, {}
-    imgToAnns, catToImgs = defaultdict(list), defaultdict(list)
+    imgToAnns, catToImgs = collections.defaultdict(list), collections.defaultdict(list)
     if 'annotations' in self.dataset:
         for ann in self.dataset['annotations']:
             imgToAnns[ann['image_id']].append(ann)
@@ -231,9 +226,9 @@ def createIndex(self):
     self.imgs = imgs
     self.cats = cats
 
-
-maskUtils = mask_util
-
+'''
+maskUtils = pycocotools.mask
+'''
 
 def loadRes(self, resFile):
     """
@@ -241,7 +236,7 @@ def loadRes(self, resFile):
     :param   resFile (str)     : file name of result file
     :return: res (obj)         : result api object
     """
-    res = COCO()
+    res = pycocotools.coco.COCO()
     res.dataset['images'] = [img for img in self.dataset['images']]
 
     # print('Loading and preparing results...')

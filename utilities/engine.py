@@ -11,8 +11,9 @@ class Engine:
         self._device = Engine.get_device(device)
         self._model.to(self._device)
 
-    def get_outputs(self, image):
-        inputs = torchvision.transforms.ToTensor()(image)
+    def get_outputs(self, inputs, is_tensor = False):
+        if not is_tensor:
+            inputs = torchvision.transforms.ToTensor()(inputs)
         inputs = inputs.to(self._device)
         self._model.eval()
         return self._model([inputs])
@@ -69,18 +70,22 @@ class Engine:
         loss.backward()
         self._optimizer.step()
 
-    def get_device(device=None):
-        if not device:
+    def get_device(device = None):
+        if device == None:
             return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if device == True:
+            return Engine.get_device()
         if type(device) is not str:
             return torch.device('cpu')
-        if device.lower() in ['gpu', 'cuda']:
+        device = device.lower()
+        if device in ['gpu', 'cuda']:
             return Engine.get_device()
         if not re.compile('cuda*').match(device):
             return torch.device('cpu')
         try:
-            device_name = torch.cuda.get_device_name(int(device.replace('cuda:', '')))
-            return torch.device('cuda')
+            device_id = int(device.replace('cuda:', ''))
+            device_name = torch.cuda.get_device_name(device_id)
+            return torch.device('cuda:%d' % device_id)
         except AssertionError:
             return torch.device('cpu')
         except ValueError:
