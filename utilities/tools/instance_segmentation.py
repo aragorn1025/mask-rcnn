@@ -24,7 +24,7 @@ def get_colored_mask(mask, color):
     colored_mask = np.stack([r, g, b], axis=2)
     return colored_mask
 
-def get_masked_image(image, predictions, rectangle_thickness = 2, text_size = 1, text_thickness = 2):
+def get_masked_image(image, predictions, rectangle_thickness = 1, text_size = 0.6, text_thickness = 2):
     masks, boxes, labels = predictions
     result = np.copy(image)
     for i in range(0, len(labels)):
@@ -33,6 +33,46 @@ def get_masked_image(image, predictions, rectangle_thickness = 2, text_size = 1,
         cv2.rectangle(result, boxes[i][0], boxes[i][1], color = (0, 255, 0), thickness = rectangle_thickness)
         cv2.putText(result, str(labels[i]), boxes[i][0], cv2.FONT_HERSHEY_SIMPLEX, text_size, (0,255,0), thickness = text_thickness)
     return result
+
+def get_predictions(engine, class_names, inputs, is_tensor = False, threshold = 0.8):
+    predictions = engine.get_outputs(inputs, is_tensor)[0]
+    scores = list(predictions['scores'].detach().cpu().numpy())
+
+    predictions_pass_threshold = [scores.index(x) for x in scores if x > threshold]
+    if len(predictions_pass_threshold) == 0:
+        return None, None, []
+    predictions_pass_threshold_last_index = [scores.index(x) for x in scores if x > threshold][-1]
+
+    masks = (predictions['masks'] > 0.5).squeeze().detach().cpu().numpy()
+    boxes = [[(i[0], i[1]), (i[2], i[3])] for i in list(predictions['boxes'].detach().cpu().numpy())]
+    labels = [class_names[i] for i in list(predictions['labels'].cpu().numpy())]
+
+    if predictions_pass_threshold_last_index > 0:
+        masks = masks[:predictions_pass_threshold_last_index + 1]
+    elif len(masks.shape) == 2:
+        masks = np.asarray([masks])
+    boxes = boxes[:predictions_pass_threshold_last_index + 1]
+    labels = labels[:predictions_pass_threshold_last_index + 1]    
+    return masks, boxes, labels
+
+def get_masks_polygon(masks):
+    masks = masks[0,:,:]
+    masks_list, masks_list_0, masks_list_1, masks_list_2 = [], [], [], []
+    for i in range(len(masks[0])):
+        for j in range(len(masks[1])):
+            if masks[i,j] == True:
+                masks_list_0.append(i), masks_list_1.append(j)            
+    masks_list_0 = np.unique(masks_list_0)
+    masks_list_2.append(masks_list_1[0])
+    for k in range(len(masks_list_1)-1):
+        if masks_list_1[k] > masks_list_1[k+1]:
+            masks_list_2.append(masks_list_1[k]), masks_list_2.append(masks_list_1[k+1])
+    masks_list_2.append(masks_list_1[-1])
+    masks_list_0 = [x for pair in zip(masks_list_0, masks_list_0) for x in pair]
+    masks_list = list(zip(masks_list_0, masks_list_2))
+    for i in range(len(masks_list)):
+        masks_list[i] = list(masks_list[i])
+    return masks_list
 
 def get_random_colored_mask(mask, colors = None):
     return get_colored_mask(mask, random.choice(colors if colors else _colors))

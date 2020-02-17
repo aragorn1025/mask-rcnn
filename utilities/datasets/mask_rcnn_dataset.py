@@ -28,6 +28,7 @@ class MaskRCNNDataset(torch.utils.data.Dataset):
 
         if len(self._masks) == 0:
             target = {}
+            target["image_path"] = self._images[index]
             return image, target
 
         target = self._get_target(index)
