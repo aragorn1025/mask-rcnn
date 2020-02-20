@@ -64,11 +64,11 @@ def get_masks_polygon(masks):
             if masks[0][i,j] == True:
                 masks_list_0.append(float(i)), masks_list_1.append(j)            
     masks_list_0 = np.unique(masks_list_0)
-    masks_list_2.append(masks_list_1[0])
+    masks_list_2.append(float(masks_list_1[0]))
     for k in range(len(masks_list_1)-1):
         if masks_list_1[k] > masks_list_1[k+1]:
             masks_list_2.append(float(masks_list_1[k])), masks_list_2.append(float(masks_list_1[k+1]))
-    masks_list_2.append(masks_list_1[-1])
+    masks_list_2.append(float(masks_list_1[-1]))
     masks_list_0 = [x for pair in zip(masks_list_0, masks_list_0) for x in pair]
     masks_list = list(zip(masks_list_2, masks_list_0))
     for i in range(len(masks_list)):
