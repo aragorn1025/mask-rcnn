@@ -26,7 +26,7 @@ def get_colored_mask(mask, color):
     colored_mask = np.stack([r, g, b], axis=2)
     return colored_mask
 
-def get_masked_image(image, predictions, rectangle_thickness = 1, text_size = 0.6, text_thickness = 2):
+def get_masked_image(image, predictions, rectangle_thickness = 1, text_size = 1, text_thickness = 2):
     masks, boxes, labels = predictions
     result = np.copy(image)
     for i in range(0, len(labels)):

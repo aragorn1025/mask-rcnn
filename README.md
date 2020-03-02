@@ -13,6 +13,13 @@
 conda create --name mask_rcnn python=3.6 -y
 conda activate mask_rcnn
 conda install pytorch torchvision cudatoolkit=9.0 -c pytorch
+conda install opencv -c menpo
+
+git clone https://github.com/cocodataset/cocoapi.git
+mv cocoapi /opt
+cd /opt/cocoapi/PythonAPI
+python setup.py build_ext install
+
 pip install -r requirements.txt
 ```
 
