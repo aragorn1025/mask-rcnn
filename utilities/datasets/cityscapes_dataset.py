@@ -8,18 +8,9 @@ import torchvision
 from .mask_rcnn_dataset import MaskRCNNDataset
 
 class CityscapesDataset(MaskRCNNDataset):
-    def __init__(self,
-                 images_root = "data/cityscapes/leftImg8bit/train/*",
-                 masks_root = "data/cityscapes/gtFine/train/*",
-                 transforms = None,
-                 transforms_target = None):
-        super(CityscapesDataset, self).__init__(images_root,
-                                                masks_root,
-                                                "*_leftImg8bit.png",
-                                                "*_gtFine_instanceIds.png",
-                                                transforms,
-                                                transforms_target)
-
+    def __init__(self, images_root = "data/cityscapes/leftImg8bit/train/*", masks_root = "data/cityscapes/gtFine/train/*", transforms = None, transforms_target = None):
+        super(CityscapesDataset, self).__init__(images_root, masks_root, "*_leftImg8bit.png", "*_gtFine_instanceIds.png", transforms, transforms_target)
+    
     def _get_target(self, index):
         mask = PIL.Image.open(self._masks[index])
         if self._transforms_target:
@@ -49,12 +40,10 @@ class CityscapesDataset(MaskRCNNDataset):
         except IndexError:
             area = []
         iscrowd = torch.zeros((n_objects,), dtype=torch.int64)
-        
         target = {}
         target["boxes"] = boxes
         target["labels"] = labels
         target["masks"] = masks
         target["area"] = area
         target["iscrowd"] = iscrowd
-
         return target

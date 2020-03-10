@@ -1,4 +1,4 @@
-Pillow
+cython
 matplotlib
 numpy
-cython
+Pillow
