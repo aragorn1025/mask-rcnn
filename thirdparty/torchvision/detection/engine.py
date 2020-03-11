@@ -89,7 +89,8 @@ def evaluate(model, data_loader, device):
 
     for image, targets in metric_logger.log_every(data_loader, 100, header):
         image = list(img.to(device) for img in image)
-        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+        # TODO: Error occured when tensor is empty at key area. It should be fixed somewhere else.
+        targets = [{k: (v.to(device) if torch.is_tensor(v) else torch.tensor(v).to(device))  for k, v in t.items()} for t in targets]
 
         torch.cuda.synchronize()
         model_time = time.time()
