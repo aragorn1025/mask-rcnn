@@ -8,19 +8,8 @@ import json
 from .mask_rcnn_dataset import MaskRCNNDataset
 
 class LabelMeDataset(MaskRCNNDataset):
-    
-    def __init__(self, 
-                 images_root, 
-                 masks_root,
-                 image_extension,
-                 transforms = None, 
-                 transforms_target = None):        
-        super(LabelMeDataset, self).__init__(images_root,
-                                             masks_root,
-                                             "*.%s"% image_extension,
-                                             "*.json",
-                                             transforms,
-                                             transforms_target)
+    def __init__(self, root_images, root_masks, image_extension, transforms = None, transforms_target = None):
+        super(LabelMeDataset, self).__init__(root_images, root_masks, "*.%s"% image_extension, "*.json", transforms, transforms_target)
 
     def _get_target(self, index):
         data = json.load(open(self._masks[index]))   

@@ -26,18 +26,21 @@ pip install -r requirements.txt
 ## 檔案結構
 ```
 ./
-|- data                    // 資料
-|  |- dataset
-|- outputs                 // 輸出檔案
-|- weights                 // 網路鍵結值
-|  |- weights.pth
-|- utilities               // 模組
-|  |- datasets             // 資料集讀取模組
-|  |- models               // 網路模型模組
-|  |- tools                // 其他工具
-|  |- engine.py            // 模組主引擎
-|- requirements.txt        // 安裝所需模組
-|- main.ipynb              // 程式碼執行結果
-|- test.py
-|- train.py
+|- data                      // 訓練所用的資料集
+|    |- dataset
+|- outputs                   // 輸出檔案
+|- classes                   // 類別名稱
+|    |- class.names
+|- weights                   // 鍵結值
+|    |- weights.pth
+|- utilities                 // 模組
+|    |- datasets             // 資料集讀取模組
+|    |- models               // 網路模型模組
+|    |- tools                // 其他工具模組
+|    |- engine.p             // 模組主引擎
+|- thirdparty                // 第三方模組
+|    |- thirdparty-module-a 
+|- requirements.txt          // 安裝所需模組
+|- detect.py                 // 單張圖片測試
+|- train.py                  // 訓練網路
 ```

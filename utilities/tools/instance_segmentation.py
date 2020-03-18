@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+import torchvision
+import PIL
 import random
 import base64
 import json
@@ -57,6 +59,26 @@ def get_predictions(engine, class_names, inputs, is_tensor = False, threshold = 
     labels = labels[:predictions_pass_threshold_last_index + 1]    
     return masks, boxes, labels
 
+def get_random_colored_mask(mask, colors = None):
+    return get_colored_mask(mask, random.choice(colors if colors else _colors))
+
+def get_transforms(resized_size):
+    transforms = {}
+    if resized_size == None or resized_size[0] <= 0 or resized_size[1] <= 0:
+        transforms['images'] = None
+        transforms['masks'] = None
+    else:
+        transforms['images'] = torchvision.transforms.Compose([
+            torchvision.transforms.Resize(resized_size),
+            torchvision.transforms.ToTensor(),
+        ])
+        transforms['masks'] = torchvision.transforms.Compose([
+            torchvision.transforms.Resize(resized_size, PIL.Image.NEAREST)
+        ])
+    return transforms
+
+####################################################################################################
+
 def get_masks_polygon(masks):
     masks_list, masks_list_0, masks_list_1, masks_list_2 = [], [], [], []
     for i in range(len(masks[0])):
@@ -103,6 +125,3 @@ def get_mask_json(image_path, masks_list, width, height):
           }
     with open(str(image_path).rstrip('.bmp') + '.json', 'w') as f:
         json.dump(abc, f)
-
-def get_random_colored_mask(mask, colors = None):
-    return get_colored_mask(mask, random.choice(colors if colors else _colors))

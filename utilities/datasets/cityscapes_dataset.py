@@ -8,8 +8,15 @@ import torchvision
 from .mask_rcnn_dataset import MaskRCNNDataset
 
 class CityscapesDataset(MaskRCNNDataset):
-    def __init__(self, images_root = "data/cityscapes/leftImg8bit/train/*", masks_root = "data/cityscapes/gtFine/train/*", transforms = None, transforms_target = None):
-        super(CityscapesDataset, self).__init__(images_root, masks_root, "*_leftImg8bit.png", "*_gtFine_instanceIds.png", transforms, transforms_target)
+    def __init__(self, root_images = "data/cityscapes/leftImg8bit/train", root_masks = "data/cityscapes/gtFine/train", transforms = None, transforms_target = None):
+        super(CityscapesDataset, self).__init__(
+            root_images = os.path.join(root_images, '*'),
+            root_masks = os.path.join(root_masks, '*'),
+            file_name_images = "*_leftImg8bit.png",
+            file_name_masks = "*_gtFine_instanceIds.png",
+            transforms = transforms,
+            transforms_target = transforms_target
+        )
     
     def _get_target(self, index):
         mask = PIL.Image.open(self._masks[index])

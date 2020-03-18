@@ -5,10 +5,10 @@ import torch
 import torchvision
 
 class MaskRCNNDataset(torch.utils.data.Dataset):
-    def __init__(self, images_root, masks_root = None, images_file_name = '*', masks_file_name = '*', transforms = None, transforms_target = None):
+    def __init__(self, root_images, root_masks = None, file_name_images = '*', file_name_masks = '*', transforms = None, transforms_target = None):
         super(MaskRCNNDataset, self).__init__()
-        self._images = sorted(glob.glob(os.path.join(images_root, images_file_name)))
-        self._masks = sorted(glob.glob(os.path.join(masks_root, masks_file_name))) if masks_root else []
+        self._images = sorted(glob.glob(os.path.join(root_images, file_name_images)))
+        self._masks = sorted(glob.glob(os.path.join(root_masks, file_name_masks))) if root_masks else []
         if len(self._images) == 0:
             raise IOError('The images not found.')
         if len(self._masks) == 0:

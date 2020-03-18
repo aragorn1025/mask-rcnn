@@ -4,6 +4,7 @@ import os
 
 import utilities.engine
 import utilities.models.mask_rcnn
+import utilities.tools.file
 import utilities.tools.general
 import utilities.tools.instance_segmentation
 
@@ -11,11 +12,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'Instance detection using Mask R-CNN.')
     parser.add_argument('-i', '--input', type = str,
         help = 'The path of file.')
-    parser.add_argument('-o', '--output', type = str,
+    parser.add_argument('-o', '--output', type = str, default = None,
         help = 'The path to save.')
-    parser.add_argument('-c', '--classes', type = str, default = './data/classes.names',
+    parser.add_argument('-c', '--classes', type = str, default = 'classes/classes.names',
         help = 'The names of the classes.')
-    parser.add_argument('-w', '--weights', type = str, default = './weights/weights.pth',
+    parser.add_argument('-w', '--weights', type = str, default = 'weights/weights.pth',
         help = 'The weights to loaded.')
     parser.add_argument('--threshold', type = float, default = 0.8,
         help = 'The threshold for the mask.')
@@ -28,13 +29,11 @@ if __name__ == '__main__':
         help = 'To use CPU rather than GPU.')
     parser.set_defaults(to_use_gpu = True)
     args = vars(parser.parse_args())
-    for k in ['input', 'classes', 'weights']:
-        if args[k] == None:
-            raise ValueError('Thw %s file path should be set.' % k)
-        if not os.path.isfile(args[k]):
-            raise IOError('The %s file is not found.' % k)
+    for key in ['input', 'classes', 'weights']:
+        utilities.tools.file.check_file(key, args[key])
     if args['output'] == None:
         args['output'] = './outputs/%s.png' % os.path.splitext(os.path.basename(args['input']))[0]
+    utilities.tools.file.check_output(args['output'])
     
     class_names = utilities.tools.general.get_classes(args['classes'])
     engine = utilities.engine.Engine(

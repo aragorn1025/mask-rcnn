@@ -153,10 +153,13 @@ def convert_to_coco_api(ds):
         img_dict['width'] = img.shape[-1]
         dataset['images'].append(img_dict)
         bboxes = targets["boxes"]
-        bboxes[:, 2:] -= bboxes[:, :2]
+        # TODO: Error occured when bboxes is empty tensor. It should be fixed somewhere else.
+        if len(bboxes) > 0:
+            bboxes[:, 2:] -= bboxes[:, :2]
         bboxes = bboxes.tolist()
         labels = targets['labels'].tolist()
-        areas = targets['area'].tolist()
+        # TODO: Error occured when areas is empty tensor. It should be fixed somewhere else.
+        areas = targets['area'].tolist() if type(targets['area']) is not list else targets['area']
         iscrowd = targets['iscrowd'].tolist()
         if 'masks' in targets:
             masks = targets['masks']

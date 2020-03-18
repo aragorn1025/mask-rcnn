@@ -9,9 +9,15 @@ __pycache__/
 *.jpg
 *.png
 *.json
-*.names
+
+# weights
+*.pt
+*.pth
 
 # data, outputs, weights directory
 data/
 outputs/
 weights/
+
+# jupyter notebook
+*.ipynb
