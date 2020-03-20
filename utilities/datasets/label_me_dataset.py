@@ -47,18 +47,10 @@ class LabelMeDataset(MaskRCNNDataset):
         labels = []
         for label_name in label_names:
             labels.append(label_name)
-        #print(labels)
         labels = labels[1:]
-        #print(labels)
-        #print(label_names)
-        #labels = label_names.keys()
-        labels = [label_names[x] for x in labels] #list(map(int, labels))
-        #print(labels)
+        labels = [label_names[x] for x in labels]
         labels = np.array(labels)
-        #print(labels)
         labels = torch.tensor(labels/1000, dtype=torch.int64)
-        #print(labels)
-        #print("-------------------------------------------------")
         masks = torch.as_tensor(masks, dtype=torch.uint8)
         try:
             area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
@@ -102,40 +94,6 @@ class LabelMeDataset(MaskRCNNDataset):
         mask = np.array(mask, dtype=bool)
         return mask
     
-    def _shapes_to_label_old(image_shape, shapes, label_name_to_value, type='class'):
-        '''
-        Reference: https://github.com/wkentaro/labelme/blob/e43d9e75a505abbbc7d62c9653ca465f2b8bafe8/labelme/utils/shape.py
-        '''
-        assert type in ['class', 'instance']
-        
-        cls = np.zeros(image_shape[:2], dtype=np.int32)
-        if type == 'instance':
-            ins = np.zeros(image_shape[:2], dtype=np.int32)
-            instance_names = ['_background_']
-        value = {'_background_': 0}
-        for shape in shapes:
-            points = shape['points']
-            label = shape['label']
-            #value_value = len(value)
-            #shape_type = shape.get('shape_type', None)
-            if type == 'class':
-                cls_name = str(int(label)*1000 + len(value))
-            #    value[cls_name] = value_value
-            elif type == 'instance':
-                cls_name = label.split('-')[0]
-                if label not in instance_names:
-                    instance_names.append(label)
-                ins_id = instance_names.index(label)
-            cls_id = label_name_to_value[cls_name]
-            mask = LabelMeDataset._shape_to_mask(image_shape[:2], points, shape_type)
-            cls[mask] = cls_id
-            if type == 'instance':
-                ins[mask] = ins_id
-                
-        if type == 'instance':
-            return cls, ins
-        return cls
-    
     def _shapes_to_label(img_shape, shapes, label_name_to_value):
         cls = np.zeros(img_shape[:2], dtype=np.int32)
         ins = np.zeros_like(cls)
@@ -171,10 +129,6 @@ class LabelMeDataset(MaskRCNNDataset):
             else:
                 label_value = len(label_name_to_value)
                 label_name_to_value[label_name] = label_value
-            #label_value = len(label_name_to_value)
-            #label_name=str(int(label_name)*1000+len(label_name_to_value))
-            #label_name_to_value[label_name] = label_value
         
-        #lbl = LabelMeDataset._shapes_to_label(image_shape, shapes, label_name_to_value)
         lbl, _ = LabelMeDataset._shapes_to_label(image_shape, shapes, label_name_to_value)
         return lbl, label_name_to_value
