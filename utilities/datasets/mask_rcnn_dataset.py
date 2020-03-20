@@ -23,7 +23,7 @@ class MaskRCNNDataset(torch.utils.data.Dataset):
         image = self._transforms(image)
         if len(self._masks) == 0:
             target = {}
-            target["image_path"] = self._images[index]
+            target["image_id"] = torch.tensor([index])
             return image, target
         target = self._get_target(index)
         target["image_id"] = torch.tensor([index])
@@ -34,3 +34,6 @@ class MaskRCNNDataset(torch.utils.data.Dataset):
     
     def _get_target(self, index):
         raise NotImplementedError('MaskRCNNDataset._get_target(self, mask) is not implement yet.')
+    
+    def get_image_path(self, index):
+        return self._images[index]

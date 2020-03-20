@@ -15,13 +15,17 @@ def _get_dataset(dataset_type, root_images, root_masks, image_extension = None, 
     if dataset_type == 'cityscapes':
         return udatasets.cityscapes_dataset.CityscapesDataset(root_images, root_masks, transforms_images, transforms_masks)
     if dataset_type == 'label_me':
-        return udatasets.label_me_dataset.LabelMeDataset(root_images, root_masks, image_extension, transforms_images, transforms_target)
+        return udatasets.label_me_dataset.LabelMeDataset(root_images, root_masks, image_extension, transforms_images, transforms_masks)
     raise NotImplementedError('Unknown dataset type.')
 
 def main(dataset_type, root_dataset, classes, weights, epoch, resized_size, batch_size, learning_rate, device):
     for key in ['train_image', 'train_mask', 'test_image', 'test_mask']:
         utools.file.check_directory(key, root_dataset[key])
-    utools.file.check_file('weights', weights)
+    if weights == None or not os.path.isfile(weights):
+        weights = 'weights/weights.pth'
+        utools.file.check_output(weights)
+    else:
+        utools.file.check_file('weights', weights)
     
     dataset = {}
     data_loader = {}
@@ -55,9 +59,6 @@ def main(dataset_type, root_dataset, classes, weights, epoch, resized_size, batc
     )
     if os.path.isfile(weights):
         engine.load(weights)
-    weights_directory = os.path.abspath(os.path.join(weights, '..'))
-    if not os.path.isdir(weights_directory):
-        os.makedirs(weights_directory, exist_ok = True)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(engine._optimizer, step_size = 3, gamma = 0.1)
     
     for i in range(0, epoch):

@@ -14,4 +14,5 @@ def check_file(key, root):
 
 def check_output(root_output):
     output_directory = os.path.abspath(os.path.join(root_output, '..'))
-    os.makedirs(output_directory, exist_ok = True)
+    if not os.path.isdir(output_directory):
+        os.makedirs(output_directory, exist_ok = True)

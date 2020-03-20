@@ -6,68 +6,75 @@ import PIL
 import PIL.ImageDraw
 import json
 from .mask_rcnn_dataset import MaskRCNNDataset
+import uuid
 
 class LabelMeDataset(MaskRCNNDataset):
+    '''
+    Reference: https://github.com/wkentaro/labelme/blob/612b40df6ff5673dab8bc9b68dbd4d1fe17630ea/labelme/utils/shape.py
+    '''
+    
     def __init__(self, root_images, root_masks, image_extension, transforms = None, transforms_target = None):
-        super(LabelMeDataset, self).__init__(root_images, root_masks, "*.%s"% image_extension, "*.json", transforms, transforms_target)
+        super(LabelMeDataset, self).__init__(
+            root_images = root_images,
+            root_masks = root_masks,
+            file_name_images = "*.%s"% image_extension,
+            file_name_masks = "*.json",
+            transforms = transforms,
+            transforms_target = transforms_target
+        )
 
     def _get_target(self, index):
         data = json.load(open(self._masks[index]))   
-        
-        imageHeight = data['imageHeight']
-        imageWidth = data['imageWidth']
-        img_arr_shape = imageHeight, imageWidth, 3
-        
-        label, label_names = LabelMeDataset._labelme_shapes_to_label(img_arr_shape, data['shapes'])
-
-        mask = PIL.Image.fromarray(label)
-        labels=[]
-        for label_name in label_names:
-            labels.append(label_name)
-                
+        image_shape = data['imageHeight'], data['imageWidth'], 3
+        mask, label_names = LabelMeDataset._labelme_shapes_to_label(image_shape, data['shapes'])
+        mask = PIL.Image.fromarray(mask)
         if self._transforms_target :
             mask = self._transforms_target(mask)
-            
         mask = np.array(mask)
-        obj_ids = np.unique(mask)
-        obj_ids = obj_ids[1:]
-
-        masks = mask == obj_ids[:, None, None]
-
-        num_objs = len(obj_ids)
+        object_ids = np.unique(mask)
+        object_ids = object_ids[object_ids > 0]
+        masks = mask == object_ids[:, None, None]
+        n_objects = len(object_ids)
         boxes = []
-        for i in range(num_objs):
-            pos = np.where(masks[i])            
+        for i in range(n_objects):
+            pos = np.where(masks[i])
             xmin = np.min(pos[1])
             xmax = np.max(pos[1])
             ymin = np.min(pos[0])
             ymax = np.max(pos[0])
             boxes.append([xmin, ymin, xmax, ymax])
-
         boxes = torch.as_tensor(boxes, dtype=torch.float32)
+        labels = []
+        for label_name in label_names:
+            labels.append(label_name)
+        #print(labels)
         labels = labels[1:]
-        labels = list(map(int, labels))
+        #print(labels)
+        #print(label_names)
+        #labels = label_names.keys()
+        labels = [label_names[x] for x in labels] #list(map(int, labels))
+        #print(labels)
         labels = np.array(labels)
+        #print(labels)
         labels = torch.tensor(labels/1000, dtype=torch.int64)
-
+        #print(labels)
+        #print("-------------------------------------------------")
         masks = torch.as_tensor(masks, dtype=torch.uint8)
-
-        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
-
-        iscrowd = torch.zeros((num_objs,), dtype=torch.int64)
-
+        try:
+            area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+        except IndexError:
+            area = []
+        iscrowd = torch.zeros((n_objects,), dtype=torch.int64)
         target = {}
         target["boxes"] = boxes
         target["labels"] = labels
         target["masks"] = masks
         target["area"] = area
         target["iscrowd"] = iscrowd
-                    
         return target
     
-    def _shape_to_mask(img_shape, points, shape_type=None,
-                      line_width=10, point_size=5):
-        mask = np.zeros(img_shape[:2], dtype=np.uint8)
+    def _shape_to_mask(image_shape, points, shape_type=None, line_width=10, point_size=5):
+        mask = np.zeros(image_shape[:2], dtype=np.uint8)
         mask = PIL.Image.fromarray(mask)
         draw = PIL.ImageDraw.Draw(mask)
         xy = [tuple(point) for point in points]
@@ -92,34 +99,36 @@ class LabelMeDataset(MaskRCNNDataset):
         else:
             assert len(xy) > 2, 'Polygon must have points more than 2'
             draw.polygon(xy=xy, outline=1, fill=1)
-            mask = np.array(mask, dtype=bool)
-            return mask
+        mask = np.array(mask, dtype=bool)
+        return mask
     
-    def _shapes_to_label(img_shape, shapes, label_name_to_value, type='class'):
+    def _shapes_to_label_old(image_shape, shapes, label_name_to_value, type='class'):
+        '''
+        Reference: https://github.com/wkentaro/labelme/blob/e43d9e75a505abbbc7d62c9653ca465f2b8bafe8/labelme/utils/shape.py
+        '''
         assert type in ['class', 'instance']
         
-        cls = np.zeros(img_shape[:2], dtype=np.int32)
+        cls = np.zeros(image_shape[:2], dtype=np.int32)
         if type == 'instance':
-            ins = np.zeros(img_shape[:2], dtype=np.int32)
+            ins = np.zeros(image_shape[:2], dtype=np.int32)
             instance_names = ['_background_']
         value = {'_background_': 0}
         for shape in shapes:
             points = shape['points']
             label = shape['label']
-            value_value = len(value)
-            shape_type = shape.get('shape_type', None)
+            #value_value = len(value)
+            #shape_type = shape.get('shape_type', None)
             if type == 'class':
                 cls_name = str(int(label)*1000 + len(value))
-                value[cls_name] = value_value
+            #    value[cls_name] = value_value
             elif type == 'instance':
                 cls_name = label.split('-')[0]
                 if label not in instance_names:
                     instance_names.append(label)
                 ins_id = instance_names.index(label)
             cls_id = label_name_to_value[cls_name]
-            mask = LabelMeDataset._shape_to_mask(img_shape[:2], points, shape_type)
+            mask = LabelMeDataset._shape_to_mask(image_shape[:2], points, shape_type)
             cls[mask] = cls_id
-            
             if type == 'instance':
                 ins[mask] = ins_id
                 
@@ -127,14 +136,45 @@ class LabelMeDataset(MaskRCNNDataset):
             return cls, ins
         return cls
     
-    def _labelme_shapes_to_label(img_shape, shapes):
-        
+    def _shapes_to_label(img_shape, shapes, label_name_to_value):
+        cls = np.zeros(img_shape[:2], dtype=np.int32)
+        ins = np.zeros_like(cls)
+        instances = []
+        for shape in shapes:
+            points = shape['points']
+            label = shape['label']
+            group_id = shape.get('group_id')
+            if group_id is None:
+                group_id = uuid.uuid1()
+            shape_type = shape.get('shape_type', None)
+    
+            cls_name = label
+            instance = (cls_name, group_id)
+    
+            if instance not in instances:
+                instances.append(instance)
+            ins_id = instances.index(instance) + 1
+            cls_id = label_name_to_value[cls_name]
+    
+            mask = LabelMeDataset._shape_to_mask(img_shape[:2], points, shape_type)
+            cls[mask] = cls_id
+            ins[mask] = ins_id
+    
+        return cls, ins
+    
+    def _labelme_shapes_to_label(image_shape, shapes):
         label_name_to_value = {'_background_': 0}
         for shape in shapes:
             label_name = shape['label'] 
-            label_value = len(label_name_to_value)
-            label_name=str(int(label_name)*1000+len(label_name_to_value))
-            label_name_to_value[label_name] = label_value
-                
-        lbl = LabelMeDataset._shapes_to_label(img_shape, shapes, label_name_to_value)
+            if label_name in label_name_to_value:
+                label_value = label_name_to_value[label_name]
+            else:
+                label_value = len(label_name_to_value)
+                label_name_to_value[label_name] = label_value
+            #label_value = len(label_name_to_value)
+            #label_name=str(int(label_name)*1000+len(label_name_to_value))
+            #label_name_to_value[label_name] = label_value
+        
+        #lbl = LabelMeDataset._shapes_to_label(image_shape, shapes, label_name_to_value)
+        lbl, _ = LabelMeDataset._shapes_to_label(image_shape, shapes, label_name_to_value)
         return lbl, label_name_to_value

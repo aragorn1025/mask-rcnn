@@ -5,7 +5,7 @@ import numpy as np
 import pycocotools.coco
 import pycocotools.cocoeval
 import pycocotools.mask
-#import time
+import time
 import torch
 
 from . import utils
@@ -104,7 +104,7 @@ class CocoEvaluator(object):
             labels = prediction["labels"].tolist()
 
             rles = [
-                pycocotools.mask.encode(np.array(mask[0, :, :, np.newaxis], order="F"))[0]
+                pycocotools.mask.encode(np.array(mask[0, :, :, np.newaxis], dtype=np.uint8, order="F"))[0]
                 for mask in masks
             ]
             for rle in rles:
@@ -281,10 +281,10 @@ def loadRes(self, resFile):
             s = ann['keypoints']
             x = s[0::3]
             y = s[1::3]
-            x0, x1, y0, y1 = np.min(x), np.max(x), np.min(y), np.max(y)
-            ann['area'] = (x1 - x0) * (y1 - y0)
+            x1, x2, y1, y2 = np.min(x), np.max(x), np.min(y), np.max(y)
+            ann['area'] = (x2 - x1) * (y2 - y1)
             ann['id'] = id + 1
-            ann['bbox'] = [x0, y0, x1 - x0, y1 - y0]
+            ann['bbox'] = [x1, y1, x2 - x1, y2 - y1]
     # print('DONE (t={:0.2f}s)'.format(time.time()- tic))
 
     res.dataset['annotations'] = anns
