@@ -79,24 +79,6 @@ def get_transforms(resized_size):
 
 ####################################################################################################
 
-def get_masks_polygon(masks):
-    masks_list, masks_list_0, masks_list_1, masks_list_2 = [], [], [], []
-    for i in range(len(masks[0])):
-        for j in range(len(masks[0][0])):
-            if masks[0][i,j] == True:
-                masks_list_0.append(float(i)), masks_list_1.append(j)            
-    masks_list_0 = np.unique(masks_list_0)
-    masks_list_2.append(float(masks_list_1[0]))
-    for k in range(len(masks_list_1)-1):
-        if masks_list_1[k] > masks_list_1[k+1]:
-            masks_list_2.append(float(masks_list_1[k])), masks_list_2.append(float(masks_list_1[k+1]))
-    masks_list_2.append(float(masks_list_1[-1]))
-    masks_list_0 = [x for pair in zip(masks_list_0, masks_list_0) for x in pair]
-    masks_list = list(zip(masks_list_2, masks_list_0))
-    for i in range(len(masks_list)):
-        masks_list[i] = list(masks_list[i])
-    return masks_list
-
 def get_mask_json(image_path, masks_list, width, height):
     image_path = str(image_path).lstrip("{'image_path'): '").rstrip("'}")
     print(image_path)
@@ -125,3 +107,21 @@ def get_mask_json(image_path, masks_list, width, height):
           }
     with open(str(image_path).rstrip('.bmp') + '.json', 'w') as f:
         json.dump(abc, f)
+
+def get_masks_polygon(masks):
+    masks_list, masks_list_0, masks_list_1, masks_list_2 = [], [], [], []
+    for i in range(len(masks[0])):
+        for j in range(len(masks[0][0])):
+            if masks[0][i,j] == True:
+                masks_list_0.append(float(i)), masks_list_1.append(j)
+    masks_list_0 = np.unique(masks_list_0)
+    masks_list_2.append(float(masks_list_1[0]))
+    for k in range(len(masks_list_1)-1):
+        if masks_list_1[k] > masks_list_1[k+1]:
+            masks_list_2.append(float(masks_list_1[k])), masks_list_2.append(float(masks_list_1[k+1]))
+    masks_list_2.append(float(masks_list_1[-1]))
+    masks_list_0 = [x for pair in zip(masks_list_0, masks_list_0) for x in pair]
+    masks_list = list(zip(masks_list_2, masks_list_0))
+    for i in range(len(masks_list)):
+        masks_list[i] = list(masks_list[i])
+    return masks_list
