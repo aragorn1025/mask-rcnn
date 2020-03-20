@@ -23,11 +23,8 @@ if __name__ == '__main__':
     parser.add_argument('--to_print_message', dest = 'to_print_message', action = 'store_true',
         help = 'To print message at the terminal.')
     parser.set_defaults(to_print_message = False)
-    parser.add_argument('--to_use_gpu', dest = 'to_use_gpu', action = 'store_true',
-        help = 'To use GPU if available.')
-    parser.add_argument('--to_use_cpu', dest = 'to_use_gpu', action = 'store_false',
-        help = 'To use CPU rather than GPU.')
-    parser.set_defaults(to_use_gpu = True)
+    parser.add_argument('--device', type = str, default = 'cuda',
+        help = 'Choose the device to use.')
     args = vars(parser.parse_args())
     for key in ['input', 'classes', 'weights']:
         utilities.tools.file.check_file(key, args[key])
@@ -38,7 +35,7 @@ if __name__ == '__main__':
     class_names = utilities.tools.general.get_classes(args['classes'])
     engine = utilities.engine.Engine(
         model = utilities.models.mask_rcnn.MaskRCNN(number_classes = len(class_names)),
-        device = args['to_use_gpu']
+        device = args['device']
     )
     engine.load(args['weights'])
     image = cv2.imread(args['input'])

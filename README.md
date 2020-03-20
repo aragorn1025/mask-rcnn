@@ -31,7 +31,7 @@ pip install -r requirements.txt
 |- outputs                   // 輸出檔案
 |- classes                   // 類別名稱
 |    |- class.names
-|- weights                   // 鍵結值
+|- weights                   // 網路鍵結值
 |    |- weights.pth
 |- utilities                 // 模組
 |    |- datasets             // 資料集讀取模組
@@ -39,8 +39,8 @@ pip install -r requirements.txt
 |    |- tools                // 其他工具模組
 |    |- engine.p             // 模組主引擎
 |- thirdparty                // 第三方模組
-|    |- thirdparty-module-a 
-|- requirements.txt          // 安裝所需模組
+|    |- thirdparty-module-a
+|- requirements.txt          // 所需環境
 |- detect.py                 // 單張圖片測試
 |- train.py                  // 訓練網路
 ```
