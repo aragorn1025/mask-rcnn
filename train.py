@@ -82,7 +82,7 @@ if __name__ == '__main__':
         help = 'The root of masks of the testing dataset.')
     parser.add_argument('--image_extension', type = str, default = 'png',
         help = 'The file extension of the images in dataset. It will be useless if the dataset_type is cityscapes.')
-    parser.add_argument('--classes', type = str, default = 'classes/class.names',
+    parser.add_argument('--classes', type = str, default = 'data/classes/class.names',
         help = 'The root of the class names.')
     parser.add_argument('--weights', type = str, default = None,
         help = 'The root of the weights.')
@@ -90,13 +90,13 @@ if __name__ == '__main__':
         help = 'The epoch for training.')
     parser.add_argument('--resized_width', type = int, default = 800,
         help = 'Resize each data by the specific width.')
-    parser.add_argument('--resized_height', type = int, default = 400,
+    parser.add_argument('--resized_height', type = int, default = 450,
         help = 'Resize each data by the specific height.')
     parser.add_argument('--batch_size', type = int, default = 1,
         help = 'The size of each batch.')
     parser.add_argument('--learning_rate', type = float, default = 0.005,
         help = 'Learning rate.')
-    parser.add_argument('--device', type = str, default = 'cuda',
+    parser.add_argument('--device', type = str, default = 'cuda:0',
         help = 'Choose the device to use.')
     args = vars(parser.parse_args())
     main(

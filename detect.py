@@ -14,7 +14,7 @@ if __name__ == '__main__':
         help = 'The path of file.')
     parser.add_argument('-o', '--output', type = str, default = None,
         help = 'The path to save.')
-    parser.add_argument('-c', '--classes', type = str, default = 'classes/classes.names',
+    parser.add_argument('-c', '--classes', type = str, default = 'data/classes/classes.names',
         help = 'The names of the classes.')
     parser.add_argument('-w', '--weights', type = str, default = 'weights/weights.pth',
         help = 'The weights to loaded.')
