@@ -18,7 +18,7 @@ def _get_dataset(dataset_type, root_images, root_masks, image_extension = None, 
         return udatasets.label_me_dataset.LabelMeDataset(root_images, root_masks, image_extension, transforms_images, transforms_masks)
     raise NotImplementedError('Unknown dataset type.')
 
-def main(dataset_type, root_dataset, classes, weights, epoch, resized_size, batch_size, learning_rate, device):
+def main(dataset_type, root_dataset, classes, weights, device, resized_size, batch_size, learning_rate, epoch):
     for key in ['train_image', 'train_mask', 'test_image', 'test_mask']:
         utools.file.check_directory(key, root_dataset[key])
     if weights == None or not os.path.isfile(weights):
@@ -98,14 +98,21 @@ if __name__ == '__main__':
         help = 'Learning rate.')
     parser.add_argument('--device', type = str, default = 'cuda',
         help = 'Choose the device to use.')
-    args = parser.parse_args()
-    
-    root_dataset = {
-        'train_image': args.train_image,
-        'train_mask': args.train_mask,
-        'test_image': args.test_image,
-        'test_mask': args.test_mask,
-        'image_extension': None if args.dataset_type == 'cityscapes' else args.image_extension
-    }
-    resized_size = (args.resized_height, args.resized_width)
-    main(args.dataset_type, root_dataset, args.classes, args.weights, args.epoch, resized_size, args.batch_size, args.learning_rate, args.device)
+    args = vars(parser.parse_args())
+    main(
+        dataset_type = args['dataset_type'],
+        root_dataset = {
+            'train_image': args['train_image'],
+            'train_mask': args['train_mask'],
+            'test_image': args['test_image'],
+            'test_mask': args['test_mask'],
+            'image_extension': None if args['dataset_type'] == 'cityscapes' else args['image_extension']
+        },
+        classes = args['classes'],
+        weights = args['weights'],
+        device = args['device'],
+        resized_size = (args['resized_height'], args['resized_width']),
+        batch_size = args['batch_size'],
+        learning_rate = args['learning_rate'],
+        epoch = args['epoch']
+    )
