@@ -13,7 +13,7 @@ class LabelMeDataset(MaskRCNNDataset):
     Reference: https://github.com/wkentaro/labelme/blob/612b40df6ff5673dab8bc9b68dbd4d1fe17630ea/labelme/utils/shape.py
     '''
     
-    def __init__(self, root_images, root_masks, image_extension, transforms = None, transforms_target = None):
+    def __init__(self, root_images, root_masks, image_extension, class_names = [], transforms = None, transforms_target = None):
         super(LabelMeDataset, self).__init__(
             root_images = root_images,
             root_masks = root_masks,
@@ -22,11 +22,12 @@ class LabelMeDataset(MaskRCNNDataset):
             transforms = transforms,
             transforms_target = transforms_target
         )
+        self._class_names = class_names
 
     def _get_target(self, index):
         data = json.load(open(self._masks[index]))   
         image_shape = data['imageHeight'], data['imageWidth'], 3
-        mask, label_names = LabelMeDataset._labelme_shapes_to_label(image_shape, data['shapes'])
+        mask, label_names = self._labelme_shapes_to_label(image_shape, data['shapes'])
         mask = PIL.Image.fromarray(mask)
         if self._transforms_target :
             mask = self._transforms_target(mask)
@@ -44,13 +45,7 @@ class LabelMeDataset(MaskRCNNDataset):
             ymax = np.max(pos[0])
             boxes.append([xmin, ymin, xmax, ymax])
         boxes = torch.as_tensor(boxes, dtype=torch.float32)
-        labels = []
-        for label_name in label_names:
-            labels.append(label_name)
-        labels = labels[1:]
-        labels = [label_names[x] for x in labels]
-        labels = np.array(labels)
-        labels = torch.tensor(labels/1000, dtype=torch.int64)
+        labels = torch.tensor(object_ids / 1000, dtype=torch.int64)
         masks = torch.as_tensor(masks, dtype=torch.uint8)
         try:
             area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
@@ -120,15 +115,19 @@ class LabelMeDataset(MaskRCNNDataset):
     
         return cls, ins
     
-    def _labelme_shapes_to_label(image_shape, shapes):
-        label_name_to_value = {'_background_': 0}
+    def _merge_classes_and_instances(cls, ins, cls_multiplier = 1000):
+        return cls * cls_multiplier + ins
+    
+    def _labelme_shapes_to_label(self, image_shape, shapes):
+        label_name_to_value = {'background': 0}
         for shape in shapes:
-            label_name = shape['label'] 
-            if label_name in label_name_to_value:
-                label_value = label_name_to_value[label_name]
+            label_name = shape['label']
+            if label_name in label_name_to_value.keys():
+                continue
+            if label_name in self._class_names:
+                label_name_to_value[label_name] = self._class_names.index(label_name)
             else:
-                label_value = len(label_name_to_value)
-                label_name_to_value[label_name] = label_value
-        
-        lbl, _ = LabelMeDataset._shapes_to_label(image_shape, shapes, label_name_to_value)
+                label_name_to_value[label_name] = len(self._class_names) + len(label_name_to_value)
+        cls, ins = LabelMeDataset._shapes_to_label(image_shape, shapes, label_name_to_value)
+        lbl = LabelMeDataset._merge_classes_and_instances(cls, ins)
         return lbl, label_name_to_value
