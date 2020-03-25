@@ -11,11 +11,11 @@ import utilities.engine as uengine
 import utilities.models as umodels
 import utilities.tools as utools
 
-def _get_dataset(dataset_type, root_images, root_masks, image_extension = None, transforms_images = None, transforms_masks = None):
+def _get_dataset(dataset_type, root_images, root_masks, image_extension = None, class_names = [], transforms_images = None, transforms_masks = None):
     if dataset_type == 'cityscapes':
         return udatasets.cityscapes_dataset.CityscapesDataset(root_images, root_masks, transforms_images, transforms_masks)
     if dataset_type == 'label_me':
-        return udatasets.label_me_dataset.LabelMeDataset(root_images, root_masks, image_extension, transforms_images, transforms_masks)
+        return udatasets.label_me_dataset.LabelMeDataset(root_images, root_masks, image_extension, class_names, transforms_images, transforms_masks)
     raise NotImplementedError('Unknown dataset type.')
 
 def main(dataset_type, root_dataset, classes, weights, device, resized_size, batch_size, learning_rate, epoch):
@@ -30,12 +30,14 @@ def main(dataset_type, root_dataset, classes, weights, device, resized_size, bat
     dataset = {}
     data_loader = {}
     transforms = utools.instance_segmentation.get_transforms(resized_size)
+    class_names = utools.general.get_classes(classes)
     for key in ['train', 'test']:
         dataset[key] = _get_dataset(
             dataset_type,
             root_dataset['%s_image' % key],
             root_dataset['%s_mask' % key],
             root_dataset['image_extension'],
+            class_names,
             transforms_images = transforms['images'],
             transforms_masks = transforms['masks']
         )
@@ -48,7 +50,6 @@ def main(dataset_type, root_dataset, classes, weights, device, resized_size, bat
             collate_fn = tutils.collate_fn
         )
     
-    class_names = utools.general.get_classes(classes)
     model = umodels.mask_rcnn.MaskRCNN(number_classes = len(class_names))
     parameters = [p for p in model.parameters() if p.requires_grad]
     engine = uengine.Engine(
