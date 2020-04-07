@@ -14,7 +14,7 @@ if __name__ == '__main__':
         help = 'The path of file.')
     parser.add_argument('-o', '--output', type = str, default = None,
         help = 'The path to save.')
-    parser.add_argument('-c', '--classes', type = str, default = 'data/classes/classes.names',
+    parser.add_argument('-c', '--class', type = str, default = 'data/classes/data.class',
         help = 'The names of the classes.')
     parser.add_argument('-w', '--weights', type = str, default = 'weights/weights.pth',
         help = 'The weights to loaded.')
@@ -32,7 +32,7 @@ if __name__ == '__main__':
         args['output'] = './outputs/%s.png' % os.path.splitext(os.path.basename(args['input']))[0]
     utilities.tools.file.check_output(args['output'])
     
-    class_names = utilities.tools.general.get_classes(args['classes'])
+    class_names = utilities.tools.general.get_classes(args['class'])
     engine = utilities.engine.Engine(
         model = utilities.models.mask_rcnn.MaskRCNN(number_classes = len(class_names)),
         device = args['device']

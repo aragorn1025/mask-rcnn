@@ -28,6 +28,12 @@ def get_colored_mask(mask, color):
     colored_mask = np.stack([r, g, b], axis=2)
     return colored_mask
 
+def get_crowd(file_name):
+    with open(file_name, 'r') as file:
+        rows = [r.strip() for r in file.read().split('\n') if len(r.strip()) > 0]
+    crowd = [False] + [r == 'True' for r in rows]
+    return crowd
+
 def get_masked_image(image, predictions, rectangle_thickness = 1, text_size = 1, text_thickness = 2):
     masks, boxes, labels = predictions
     result = np.copy(image)

@@ -1,23 +1,23 @@
 # temp files
-*~
-*.pyc
 .ipynb_checkpoints/
 __pycache__/
+*~
+*.pyc
 
 # data and labels
-*.jpeg
-*.jpg
-*.png
-*.json
-
-# weights
-*.pt
-*.pth
-
-# data, outputs, weights directory
 data/
 outputs/
+*.class
+*.crowd
+*.jpeg
+*.jpg
+*.json
+*.png
+
+# weights
 weights/
+*.pt
+*.pth
 
 # jupyter notebook
 *.ipynb
