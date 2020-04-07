@@ -11,18 +11,19 @@ import utilities.engine as uengine
 import utilities.models as umodels
 import utilities.tools as utools
 
-def _get_dataset(dataset_type, root_images, root_masks, image_extension = None, class_names = [], transforms_images = None, transforms_masks = None):
+def _get_dataset(dataset_type, root_images, root_masks, image_extension = None, class_names = [], is_crowd = [], transforms_images = None, transforms_masks = None):
     if dataset_type == 'cityscapes':
         return udatasets.cityscapes_dataset.CityscapesDataset(root_images, root_masks, transforms_images, transforms_masks)
     if dataset_type == 'label_me':
-        return udatasets.label_me_dataset.LabelMeDataset(root_images, root_masks, image_extension, class_names, transforms_images, transforms_masks)
+        return udatasets.label_me_dataset.LabelMeDataset(root_images, root_masks, image_extension, class_names, is_crowd, transforms_images, transforms_masks)
     raise NotImplementedError('Unknown dataset type.')
 
 def main(dataset_type, root_dataset, classes, weights, device, resized_size, batch_size, learning_rate, epoch):
     for key in ['train_image', 'train_mask', 'test_image', 'test_mask']:
         utools.file.check_directory(key, root_dataset[key])
     if weights == None or not os.path.isfile(weights):
-        weights = 'weights/weights.pth'
+        if weights == None:
+            weights = 'weights/weights.pth'
         utools.file.check_output(weights)
     else:
         utools.file.check_file('weights', weights)
@@ -38,6 +39,7 @@ def main(dataset_type, root_dataset, classes, weights, device, resized_size, bat
             root_dataset['%s_mask' % key],
             root_dataset['image_extension'],
             class_names,
+            [True] * len(class_names),
             transforms_images = transforms['images'],
             transforms_masks = transforms['masks']
         )
@@ -65,8 +67,8 @@ def main(dataset_type, root_dataset, classes, weights, device, resized_size, bat
     for i in range(0, epoch):
         tengine.train_one_epoch(engine._model, engine._optimizer, data_loader['train'], engine._device, i, print_freq = 10)
         lr_scheduler.step()
-        tengine.evaluate(engine._model, data_loader['test'], device = engine._device)
         engine.save(weights)
+        tengine.evaluate(engine._model, data_loader['test'], device = engine._device)
     print('Training done.')
 
 if __name__ == '__main__':

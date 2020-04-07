@@ -13,7 +13,7 @@ class LabelMeDataset(MaskRCNNDataset):
     Reference: https://github.com/wkentaro/labelme/blob/612b40df6ff5673dab8bc9b68dbd4d1fe17630ea/labelme/utils/shape.py
     '''
     
-    def __init__(self, root_images, root_masks, image_extension, class_names = [], transforms = None, transforms_target = None):
+    def __init__(self, root_images, root_masks, image_extension, class_names = [], is_crowd = [], transforms = None, transforms_target = None):
         super(LabelMeDataset, self).__init__(
             root_images = root_images,
             root_masks = root_masks,
@@ -23,6 +23,12 @@ class LabelMeDataset(MaskRCNNDataset):
             transforms_target = transforms_target
         )
         self._class_names = class_names
+        if len(is_crowd) >= len(class_names):
+            self._is_crowd = is_crowd[:len(class_names)]
+        else:
+            self._is_crowd = is_crowd
+            self._is_crowd.extend([False] * (len(class_names) - len(is_crowd)))
+        self._is_crowd = np.array(self._is_crowd).astype(int).tolist()
 
     def _get_target(self, index):
         data = json.load(open(self._masks[index]))   
@@ -37,7 +43,7 @@ class LabelMeDataset(MaskRCNNDataset):
         masks = mask == object_ids[:, None, None]
         n_objects = len(object_ids)
         boxes = []
-        for i in range(n_objects):
+        for i in range(0, n_objects):
             pos = np.where(masks[i])
             xmin = np.min(pos[1])
             xmax = np.max(pos[1])
@@ -51,7 +57,10 @@ class LabelMeDataset(MaskRCNNDataset):
             area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
         except IndexError:
             area = []
-        iscrowd = torch.zeros((n_objects,), dtype=torch.int64)
+        try:
+            iscrowd = torch.as_tensor([self._is_crowd[lbl] for lbl in labels], dtype=torch.int64)
+        except IndexError:
+            iscrowd = torch.zeros((n_objects,), dtype=torch.int64)
         target = {}
         target["boxes"] = boxes
         target["labels"] = labels
