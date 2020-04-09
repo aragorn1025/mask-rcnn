@@ -1,6 +1,7 @@
 import argparse
 import math
 import os
+import time
 import torch
 
 import thirdparty.torchvision.detection.utils as tutils
@@ -10,49 +11,54 @@ import utilities.engine as uengine
 import utilities.models as umodels
 import utilities.tools as utools
 
-def _get_dataset(dataset_type, root_images, root_masks, image_extension = '', class_names = [], is_crowd = [], transforms = None):
+def _get(dataset_type, root_images, root_masks, image_extension = '', class_names = [], is_crowd = [], transforms = None):
     if dataset_type == 'cityscapes':
         return udatasets.cityscapes_dataset.CityscapesDataset(root_images, root_masks, transforms['images'], transforms['masks'])
     if dataset_type == 'label_me':
         return udatasets.label_me_dataset.LabelMeDataset(root_images, root_masks, image_extension, class_names, is_crowd, transforms['images'], transforms['masks'])
     raise NotImplementedError('Unknown dataset type.')
 
-def _get_checkouts_format(weights, checkouts, bits = -1):
-    w = os.path.splitext(os.path.basename(weights))
-    if bits <= 0:
-        return os.path.join(checkouts, '%s_%%d%s' % (w[0], w[1]))
-    else:
-        return os.path.join(checkouts, '%s_%%0%dd%s' % (w[0], bits, w[1]))
-
-def main(dataset_type, root_dataset, clazz, crowd, weights, checkouts, epoch, device, resized_size, batch_size, learning_rate, print_frequency, to_skip_evaluation):
-    for key in ['train_image', 'train_mask', 'test_image', 'test_mask']:
-        utools.file.check_directory(key, root_dataset[key])
+def main(dataset_type, root_dataset, clazz, crowd, weights, checkouts, epoch, device, resized_size, batch_size, learning_rate, frequency, to_evaluate):
+    for key in ['image', 'mask']:
+        utools.file.check_directory('train_%s' % key, root_dataset['train_%s' % key])
+        if not to_evaluate['test']:
+            continue
+        utools.file.check_directory('test_%s' % key, root_dataset['test_%s' % key])
     if weights == None:
         weights = 'weights/weights.pth'
     utools.file.check_output(weights)
     if checkouts != None:
         utools.file.check_output(os.path.join(checkouts, 'weights.pth'))
-        checkout_format = _get_checkouts_format(weights, checkouts, math.ceil(math.log10(epoch)))
+        checkout_format = utools.general.get_checkouts_format(weights, checkouts, math.ceil(math.log10(epoch)))
     
     dataset = {}
     data_loader = {}
     transforms = utools.instance_segmentation.get_transforms(resized_size)
     class_names = utools.general.get_classes(clazz)
+    is_crowd = {}
     if crowd == None:
-        is_crowd = [False] * len(class_names)
+        is_crowd['train'] = [False] * len(class_names)
     else:
-        is_crowd = utools.instance_segmentation.get_crowd(crowd)
-    for key in ['train', 'test']:
-        dataset[key] = _get_dataset(
+        is_crowd['train'] = utools.instance_segmentation.get_crowd(crowd)
+    is_crowd['evaluate_train'] = [False] * len(class_names)
+    is_crowd['evaluate_test'] = [False] * len(class_names)
+    for key in ['train', 'evaluate_train', 'evaluate_test']:
+        is_evaluation = (key[0] == 'e')
+        if is_evaluation and not to_evaluate[key.split('_')[-1]]:
+            continue
+        dataset[key] = _get(
             dataset_type = dataset_type,
-            root_images = root_dataset['%s_image' % key],
-            root_masks = root_dataset['%s_mask' % key],
+            root_images = root_dataset['%s_image' % (key.split('_')[-1])],
+            root_masks = root_dataset['%s_mask' % (key.split('_')[-1])],
             image_extension = root_dataset['image_extension'],
             class_names = class_names,
-            is_crowd = is_crowd,
+            is_crowd = is_crowd[key],
             transforms = transforms
         )
-        print('There are %d %sing images.' % (len(dataset[key]), key))
+        if key == 'train':
+            print('There are %d %sing images.' % (len(dataset[key]), key))
+        if key[-4:] == 'test':
+            print('There are %d %sing images.' % (len(dataset[key]), key[-4:]))
         data_loader[key] = torch.utils.data.DataLoader(
             dataset[key],
             batch_size = batch_size,
@@ -72,18 +78,34 @@ def main(dataset_type, root_dataset, clazz, crowd, weights, checkouts, epoch, de
     if os.path.isfile(weights):
         engine.load(weights)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(engine._optimizer, step_size = 3, gamma = 0.1)
+    time_start = time.time()
     for i in range(0, epoch):
-        tengine.train_one_epoch(engine._model, engine._optimizer, data_loader['train'], engine._device, i, print_freq = print_frequency)
+        time_mark = time.time()
+        tengine.train_one_epoch(engine._model, engine._optimizer, data_loader['train'], engine._device, i, print_freq = frequency['print'])
         lr_scheduler.step()
         engine.save(weights)
         if checkouts != None:
             os.popen('cp %s %s' % (weights, checkout_format % i))
-        for k in ['train', 'test']:
-            if to_skip_evaluation[k]:
+        time_gap = time.strftime("%H:%M:%S", time.gmtime(time.time() - time_mark))
+        print("[Runtime] train: %s" % time_gap)
+        if i % frequency['evaluate'] != 0:
+            continue
+        for key in ['train', 'test']:
+            if not to_evaluate[key]:
                 continue
-            print('Evaluating %sing data.' % k)
-            tengine.evaluate(engine._model, data_loader[k], device = engine._device, print_freq = print_frequency)
-    print('Training done.')
+            time_mark = time.time()
+            print('Evaluating %sing data:' % key)
+            tengine.evaluate(engine._model, data_loader['evaluate_%s' % key], device = engine._device, print_freq = frequency['print'])
+            time_gap = time.strftime("%H:%M:%S", time.gmtime(time.time() - time_mark))
+            print("[Runtime] evaluation %sing data: %s" % (key, time_gap))
+    time_gap = time.time() - time_start
+    if time_gap >= 24 * 60 * 60 * 2:
+        print("[Runtime] total: %d days %s" % (time_gap // (24 * 60 * 60), time.strftime("%H:%M:%S", time.gmtime(time_gap))))
+    elif time_gap >= 24 * 60 * 60:
+        print("[Runtime] total: 1 day %s" % time.strftime("%H:%M:%S", time.gmtime(time_gap)))
+    else:
+        print("[Runtime] total: %s" % time.strftime("%H:%M:%S", time.gmtime(time_gap)))
+    print('Terminate.')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'Training Mask R-CNN model.')
@@ -93,9 +115,9 @@ if __name__ == '__main__':
         help = 'The root of images of the training dataset.')
     parser.add_argument('--train_mask', type = str,
         help = 'The root of masks of the training dataset.')
-    parser.add_argument('--test_image', type = str,
+    parser.add_argument('--test_image', type = str, default = None,
         help = 'The root of images of the testing dataset.')
-    parser.add_argument('--test_mask', type = str,
+    parser.add_argument('--test_mask', type = str, default = None,
         help = 'The root of masks of the testing dataset.')
     parser.add_argument('--image_extension', type = str, default = 'png',
         help = 'The file extension of the images in dataset. It will be useless if the dataset_type is cityscapes.')
@@ -119,14 +141,20 @@ if __name__ == '__main__':
         help = 'The size of each batch.')
     parser.add_argument('--learning_rate', type = float, default = 0.005,
         help = 'Learning rate.')
-    parser.add_argument('--print_frequency', type = int, default = 100,
-        help = 'Learning rate.')
-    parser.add_argument('--to_skip_training_evaluation', dest = 'to_skip_training_evaluation', action = 'store_true',
-        help = 'To skip evaluation of the training data for saving time.')
-    parser.set_defaults(to_skip_training_evaluation = False)
-    parser.add_argument('--to_skip_testing_evaluation', dest = 'to_skip_testing_evaluation', action = 'store_true',
-        help = 'To skip evaluation of the testing data for saving time.')
-    parser.set_defaults(to_skip_testing_evaluation = False)
+    parser.add_argument('--printing_frequency', type = int, default = 100,
+        help = 'Printing frequency during training or evaluation of each epoch.')
+    parser.add_argument('--evaluation_frequency', type = int, default = 1,
+        help = 'Evaluation frequency.')
+    parser.add_argument('--to_do_training_evaluation', dest = 'to_evaluate_training', action = 'store_true',
+        help = 'To do evaluation of the training data.')
+    parser.add_argument('--to_skip_training_evaluation', dest = 'to_evaluate_training', action = 'store_false',
+        help = 'To skip evaluation of the training data.')
+    parser.set_defaults(to_evaluate_training = False)
+    parser.add_argument('--to_do_testing_evaluation', dest = 'to_evaluate_testing', action = 'store_true',
+        help = 'To do evaluation of the testing data.')
+    parser.add_argument('--to_skip_testing_evaluation', dest = 'to_evaluate_testing', action = 'store_false',
+        help = 'To skip evaluation of the testing data.')
+    parser.set_defaults(to_evaluate_testing = True)
     args = vars(parser.parse_args())
     main(
         dataset_type = args['dataset_type'],
@@ -146,9 +174,12 @@ if __name__ == '__main__':
         resized_size = (args['resized_height'], args['resized_width']),
         batch_size = args['batch_size'],
         learning_rate = args['learning_rate'],
-        print_frequency = args['print_frequency'],
-        to_skip_evaluation = {
-            'train': args['to_skip_training_evaluation'],
-            'test': args['to_skip_testing_evaluation']
+        frequency = {
+            'print': args['printing_frequency'],
+            'evaluate': args['evaluation_frequency']
+        },
+        to_evaluate = {
+            'train': args['to_evaluate_training'],
+            'test': args['to_evaluate_testing']
         }
     )

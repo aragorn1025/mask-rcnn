@@ -1,4 +1,12 @@
+import os
 import random
+
+def get_checkouts_format(weights, checkouts, bits = -1):
+    w = os.path.splitext(os.path.basename(weights))
+    if bits <= 0:
+        return os.path.join(checkouts, '%s_%%d%s' % (w[0], w[1]))
+    else:
+        return os.path.join(checkouts, '%s_%%0%dd%s' % (w[0], bits, w[1]))
 
 def get_classes(file_name):
     classes = []
