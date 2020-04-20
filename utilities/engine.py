@@ -5,6 +5,15 @@ import torchvision
 
 class Engine:
     def __init__(self, model, criterion = None, optimizer = None, device = None):
+        """
+        Engine is a class that control the model.
+        
+        Keyword arguments:
+        model     -- The model to use
+        criterion -- The criterion for training. Engine will be testing only if criterion set as None. (default None)
+        optimizer -- The optimizer for training. Engine will be testing only if optimizer set as None. (default None)
+        device    -- The device used. It could be CPU, GPU, CUDA, CUDA:0, and so on. If device set as None, it will set as GPU if GPU is available. (default None)
+        """
         self._model = model
         self._criterion = criterion
         self._optimizer = optimizer
