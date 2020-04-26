@@ -26,9 +26,9 @@ def main(dataset_type, root_dataset, clazz, crowd, weights, checkouts, epoch, de
         utools.file.check_directory('test_%s' % key, root_dataset['test_%s' % key])
     if weights == None:
         weights = 'weights/weights.pth'
-    utools.file.check_output(weights)
+    utools.file.check_outputs(weights)
     if checkouts != None:
-        utools.file.check_output(os.path.join(checkouts, 'weights.pth'))
+        utools.file.check_outputs(os.path.join(checkouts, 'weights.pth'))
         checkout_format = utools.general.get_checkouts_format(weights, checkouts, math.ceil(math.log10(epoch)))
     
     dataset = {}
