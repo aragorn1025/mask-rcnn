@@ -12,8 +12,9 @@
 ```
 conda create --name mask_rcnn python=3.6 -y
 conda activate mask_rcnn
-conda install pytorch torchvision cudatoolkit=9.2 -c pytorch
-conda install opencv -c menpo
+conda install pytorch torchvision cudatoolkit=9.2 -c pytorch -y
+conda install opencv -c menpo -y
+pip install Cython
 pip install -r requirements.txt
 ```
 

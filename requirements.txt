@@ -1,4 +1,3 @@
-Cython
 Pillow
 matplotlib
 numpy
