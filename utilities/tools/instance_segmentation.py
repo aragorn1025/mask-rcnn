@@ -34,11 +34,48 @@ def get_crowd(file_name):
     crowd = [False] + [r == 'True' for r in rows]
     return crowd
 
-def get_masked_image(image, predictions, mask_weight = 0.5, colors = None, rectangle_thickness = 1, text_size = 1, text_thickness = 2):
+def _get_crowded_box(box_0, box_1):
+    xmin = min(box_0[0][0], box_1[0][0])
+    ymin = min(box_0[0][1], box_1[0][1])
+    xmax = max(box_0[1][0], box_1[1][0])
+    ymax = max(box_0[1][1], box_1[1][1])
+    return (xmin, ymin), (xmax, ymax)
+
+def get_crowded_predictions(predictions, clazz, crowd):
+    masks, boxes, labels = predictions
+    if len(labels) <= 1:
+        return masks, boxes, labels
+    crowdable_clazz = []
+    for cl, cr in zip(clazz, crowd):
+        if cr:
+            crowdable_clazz.append(cl)
+    crowding_masks = {}
+    crowding_boxes = {}
+    crowded_masks = []
+    crowded_boxes = []
+    crowded_labels = []
+    for mask, box, label in zip(masks, boxes, labels):
+        if label not in crowdable_clazz:
+            crowded_masks.append(mask)
+            crowded_boxes.append(box)
+            crowded_labels.append(label)
+        else:
+            if label not in crowding_masks.keys():
+                crowding_masks[label] = mask
+                crowding_boxes[label] = box
+            crowding_masks[label] = np.bitwise_or(crowding_masks[label], mask)
+            crowding_boxes[label] = _get_crowded_box(crowding_boxes[label], box)
+    for label in crowding_masks.keys():
+        crowded_masks.append(crowding_masks[label])
+        crowded_boxes.append(crowding_boxes[label])
+        crowded_labels.append(label)
+    return crowded_masks, crowded_boxes, crowded_labels
+
+def get_masked_image(image, predictions, rectangle_thickness = 1, text_size = 1, text_thickness = 2, mask_weight = 0.5, mask_colors = None):
     masks, boxes, labels = predictions
     result = np.copy(image)
     for i in range(0, len(labels)):
-        colored_mask = get_random_colored_mask(masks[i], colors = colors)
+        colored_mask = get_random_colored_mask(masks[i], colors = mask_colors)
         result = cv2.addWeighted(result, 1, colored_mask, mask_weight, 0)
         if rectangle_thickness <= 0:
             continue
@@ -47,6 +84,12 @@ def get_masked_image(image, predictions, mask_weight = 0.5, colors = None, recta
             continue
         cv2.putText(result, str(labels[i]), boxes[i][0], cv2.FONT_HERSHEY_SIMPLEX, text_size, (0,255,0), thickness = text_thickness)
     return result
+
+def get_merged_predictions(predictions):
+    masks, boxes, labels = predictions
+    print(masks)
+    print(boxes)
+    print(labels)
 
 def get_predictions(engine, class_names, inputs, is_tensor = False, threshold = 0.8):
     predictions = engine.get_outputs(inputs, is_tensor)[0]
