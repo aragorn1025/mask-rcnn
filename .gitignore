@@ -21,3 +21,6 @@ weights/
 
 # jupyter notebook
 *.ipynb
+
+# others
+*.zip

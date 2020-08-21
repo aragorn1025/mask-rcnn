@@ -71,6 +71,20 @@ def get_crowded_predictions(predictions, clazz, crowd):
         crowded_labels.append(label)
     return crowded_masks, crowded_boxes, crowded_labels
 
+def get_mask(image, predictions, rectangle_thickness = 1, text_size = 1, text_thickness = 2, mask_weight = 0.5, mask_colors = None):
+    masks, boxes, labels = predictions
+    result = np.zeros(image.shape, np.uint8)
+    for i in range(0, len(labels)):
+        colored_mask = get_random_colored_mask(masks[i], colors = mask_colors)
+        result = cv2.addWeighted(result, 1, colored_mask, mask_weight, 0)
+        if rectangle_thickness <= 0:
+            continue
+        cv2.rectangle(result, boxes[i][0], boxes[i][1], color = (0, 255, 0), thickness = rectangle_thickness)
+        if text_size <= 0 or text_thickness <= 0:
+            continue
+        cv2.putText(result, str(labels[i]), boxes[i][0], cv2.FONT_HERSHEY_SIMPLEX, text_size, (0,255,0), thickness = text_thickness)
+    return result
+
 def get_masked_image(image, predictions, rectangle_thickness = 1, text_size = 1, text_thickness = 2, mask_weight = 0.5, mask_colors = None):
     masks, boxes, labels = predictions
     result = np.copy(image)
@@ -84,12 +98,6 @@ def get_masked_image(image, predictions, rectangle_thickness = 1, text_size = 1,
             continue
         cv2.putText(result, str(labels[i]), boxes[i][0], cv2.FONT_HERSHEY_SIMPLEX, text_size, (0,255,0), thickness = text_thickness)
     return result
-
-def get_merged_predictions(predictions):
-    masks, boxes, labels = predictions
-    print(masks)
-    print(boxes)
-    print(labels)
 
 def get_predictions(engine, class_names, inputs, is_tensor = False, threshold = 0.8):
     predictions = engine.get_outputs(inputs, is_tensor)[0]
